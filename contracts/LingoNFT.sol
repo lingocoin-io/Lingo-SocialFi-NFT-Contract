@@ -160,7 +160,7 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
         _hasMinted[msg.sender][tier] = true;
         _tokenIdCounter = _tokenIdCounter + 1;
         _tokenURIs[tokenId] = uri;
-        _mint(to, tokenId);
+        _safeMint(to, tokenId);
         if (tier == Tier.FIRST_CLASS) {
             firstClassSupplyCounter += 1;
         }
