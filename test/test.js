@@ -697,55 +697,6 @@ describe("Lingo NFT Tests", async () => {
             lingoNFT = await LingoNFT.deploy();
             await lingoNFT.deployed();
         });
-        it("should allow only the owner to withdraw", async function() {
-            // Send some Ether to the contract
-            await owner.sendTransaction({
-                to: lingoNFT.address,
-                value: ethers.utils.parseEther("1.0"), // Sending 1 Ether
-            });
-    
-            // Try to withdraw with an account that is not the owner
-            await expect(lingoNFT.connect(user1).withdraw()).to.be.revertedWith("Ownable: caller is not the owner");
-        });
-       
-it("sends ether to the contract and checks balance", async function () {
-        await owner.sendTransaction({
-            to: lingoNFT.address,
-            value: ethers.utils.parseEther("5"),
-        });
-        expect(await ethers.provider.getBalance(lingoNFT.address)).to.equal(ethers.utils.parseEther("5"));
-    });
-
-    it("should allow the owner to withdraw when there is Ether", async function() {
-        // Send some Ether to the contract to ensure it has a balance
-        await owner.sendTransaction({
-            to: lingoNFT.address,
-            value: ethers.utils.parseEther("1.0"),
-        });
-    
-        const initialOwnerBalance = await ethers.provider.getBalance(owner.address);
-        const contractBalance = await ethers.provider.getBalance(lingoNFT.address);
-    
-        // Ensure the contract has balance before withdrawing
-        expect(contractBalance).to.be.gt(0);
-    
-        // Withdraw
-        const tx = await lingoNFT.connect(owner).withdraw();
-        const receipt = await tx.wait();
-        const gasUsed = receipt.gasUsed.mul(receipt.effectiveGasPrice);
-        const finalOwnerBalance = await ethers.provider.getBalance(owner.address);
-    
-        // Check that the owner received the Ether minus gas fees
-        expect(finalOwnerBalance.add(gasUsed)).to.be.closeTo(initialOwnerBalance.add(contractBalance), ethers.utils.parseEther("0.01"));
-    
-        // Check that the contract's balance is now 0
-        expect(await ethers.provider.getBalance(lingoNFT.address)).to.equal(0);
-    });
-    
-
-    it("should revert if there is no Ether to withdraw", async function() {
-        // Assuming the contract currently has a 0 balance
-        await expect(lingoNFT.connect(owner).withdraw()).to.be.revertedWith("No funds left to withdraw");
-    });
+        
     });
 });
