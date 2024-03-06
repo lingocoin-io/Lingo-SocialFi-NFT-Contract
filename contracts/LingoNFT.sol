@@ -183,5 +183,4 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
         (bool sent, ) = owner().call{value: balance}("");
         require(sent, "Transfer failed.");  
     }
-    receive() external payable {}
 }
