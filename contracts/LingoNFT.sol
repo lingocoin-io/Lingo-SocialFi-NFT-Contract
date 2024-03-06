@@ -4,8 +4,6 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
     // Minting window
