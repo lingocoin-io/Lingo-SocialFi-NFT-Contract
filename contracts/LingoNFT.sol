@@ -139,7 +139,6 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
     }
     // Function to set the sale start date
     function setSaleStartTime(uint256 _startDate) external onlyOwner {
-        //require(_startDate > block.timestamp,"Invalid Start Date");
         saleStartTime = _startDate;
     }
     // Function to get the sale start date
