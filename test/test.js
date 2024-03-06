@@ -185,7 +185,7 @@ describe("Lingo NFT Tests", async () => {
             let economyClassTier = 0; 
             let businessClassTier = 1; 
             let firstClassTier = 2;
-            let firstClassMintPrice = 2;
+            let firstClassMintPrice = 1;
     
             before(async function() {
                 // Deploy the contract
@@ -404,7 +404,9 @@ describe("Lingo NFT Tests", async () => {
                 await lingoNFT.setSaleStartTime(SaleStartTime,{
                     gasLimit: 30000000
                 });
-
+                await lingoNFT.setFirstClassMintPrice(firstClassMintPrice, {
+                    gasLimit: 30000000
+                });
                 await expect(
                     lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { value: firstClassMintPrice , gasLimit: 30000000})
                 ).to.emit(lingoNFT, 'Transfer'); 
@@ -428,7 +430,9 @@ describe("Lingo NFT Tests", async () => {
                 await lingoNFT.setSaleStartTime(SaleStartTime,{
                     gasLimit: 30000000
                 });
-
+                await lingoNFT.setFirstClassMintPrice(firstClassMintPrice, {
+                    gasLimit: 30000000
+                });
                 await expect(
                     lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { value: firstClassMintPrice , gasLimit : 3000000})
                 ).to.be.revertedWith("Unauthorized Signer");
@@ -447,7 +451,9 @@ describe("Lingo NFT Tests", async () => {
                 await lingoNFT.setSaleStartTime(SaleStartTime,{
                     gasLimit: 30000000
                 });
-
+                await lingoNFT.setFirstClassMintPrice(firstClassMintPrice, {
+                    gasLimit: 30000000
+                });
                 await expect(
                     lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { value: firstClassMintPrice , gasLimit : 3000000})
                 ).to.be.revertedWith("Unauthorized Signer");

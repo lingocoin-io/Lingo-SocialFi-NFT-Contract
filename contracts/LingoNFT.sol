@@ -100,7 +100,7 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
 
    function mintFirstClassNFT(Tier tier, bytes32 r, bytes32 s, uint8 v) external payable nonReentrant isActive {
         require(tier == Tier.FIRST_CLASS, "This function is only for FIRST_CLASS tier");
-        require(msg.value >= firstClassMintPrice, "Ether sent is not correct");
+        require(msg.value == firstClassMintPrice, "Ether sent is not correct");
         require(!_hasMinted[msg.sender][Tier.FIRST_CLASS], "Address already minted First");
         require( getSignerByTier(tier) != address(0), "Invalid Signer");
         bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, tier));

@@ -1166,8 +1166,8 @@
       ]
     },
     "/Users/adrien/Coding/Socialfi-contract-remediation/contracts/LingoNFT.sol": {
-      "lastModificationDate": 1709742353248,
-      "contentHash": "4890f7031014dcca80a11e5d641d8d48",
+      "lastModificationDate": 1709744689154,
+      "contentHash": "63e969537dd45dfece491279d6cf536b",
       "sourceName": "contracts/LingoNFT.sol",
       "solcConfig": {
         "version": "0.8.20",
