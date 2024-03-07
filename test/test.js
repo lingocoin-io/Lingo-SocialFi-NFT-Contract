@@ -67,7 +67,6 @@ describe("Lingo NFT Tests", async () => {
         });
         it("Returns the Domain Seperator Value", async () => {
             domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
-            console.log(domainSeperator);
             expect(domainSeperator).to.not.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
         });
 
@@ -131,6 +130,7 @@ describe("Lingo NFT Tests", async () => {
 
             it("Should revert Economy minting when saleStartTime is not set", async function () {
                 // Prepare message to sign
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, economyClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -149,6 +149,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert Business minting when saleStartTime is not set", async function () {
                 // Prepare message to sign
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, economyClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -167,6 +168,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert First Class minting when saleStartTime is not set", async function () {
                 // Prepare message to sign
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user2.address, firstClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -225,6 +227,7 @@ describe("Lingo NFT Tests", async () => {
 
             it("Should allow Economy minting after saleStartTime is set and Economy Signer signature", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, economyClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -244,8 +247,31 @@ describe("Lingo NFT Tests", async () => {
                     })
                 ).to.emit(lingoNFT, 'Transfer'); // Assuming Transfer event is emitted on successful mint
             });
+            it("Should revert Economy minting after saleStartTime is set and Economy Signer signature but Incorrect Domain Seperator", async function () {
+
+                domainSeperator = "0x0000000000000000000000000000000000000000000000000000000000000000"
+                const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, economyClassTier]);
+                const messageHashBytes = ethers.utils.arrayify(messageHash);
+
+                await lingoNFT.setEconomySigner(businessSigner.address, {
+                    gasLimit: 30000000
+                });//set the business signer instead of economy
+                economySignature = await economySigner.signMessage(messageHashBytes);
+                const { v, r, s } = ethers.utils.splitSignature(economySignature);
+                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
+                await lingoNFT.setSaleStartTime(SaleStartTime, {
+                    gasLimit: 30000000
+                });
+
+                await expect(
+                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(economyClassTier, r, s, v, {
+                        gasLimit: 30000000
+                    })
+                ).to.be.revertedWith("Unauthorized Signer"); // Assuming Transfer event is emitted on successful mint
+            });
             it("Should revert Economy minting after saleStartTime is set and Business Signer signature", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, economyClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -267,6 +293,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert Economy minting after saleStartTime is set and Economy Signer signature but Business Class Tier", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, economyClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -290,6 +317,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert Economy minting after saleStartTime is set and Economy Signer signature but First Class Tier", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, firstClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -311,6 +339,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should allow Business minting after saleStartTime is set and Business Signer signature", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, businessClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -330,8 +359,31 @@ describe("Lingo NFT Tests", async () => {
                     })
                 ).to.emit(lingoNFT, 'Transfer'); // Assuming Transfer event is emitted on successful mint
             });
+            it("Should revert Business minting after saleStartTime is set and Business Signer signature but Incorrect Domain Seperator", async function () {
+
+                domainSeperator = "0x0000000000000000000000000000000000000000000000000000000000000000";
+                const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, businessClassTier]);
+                const messageHashBytes = ethers.utils.arrayify(messageHash);
+
+                await lingoNFT.setBusinessSigner(economySigner.address, {
+                    gasLimit: 30000000
+                });//set wrong signer
+                businessSignature = await businessSigner.signMessage(messageHashBytes);
+                const { v, r, s } = ethers.utils.splitSignature(businessSignature);
+                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
+                await lingoNFT.setSaleStartTime(SaleStartTime, {
+                    gasLimit: 30000000
+                });
+
+                await expect(
+                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(businessClassTier, r, s, v, {
+                        gasLimit: 30000000
+                    })
+                ).to.be.revertedWith("Unauthorized Signer");
+            });
             it("Should revert Business minting after saleStartTime is set and Economy Signer signature", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, businessClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -353,6 +405,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert Business minting after saleStartTime is set and Business Signer signature but Economy Class Tier", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, businessClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -377,6 +430,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert Business minting after saleStartTime is set and Business Signer signature but First Class Tier", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, firstClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -399,6 +453,7 @@ describe("Lingo NFT Tests", async () => {
 
             it("Should allow First minting after saleStartTime is set and First Signer signature", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, firstClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -423,8 +478,31 @@ describe("Lingo NFT Tests", async () => {
                 console.log("Contract Balance after first Class minting : ", contractBalance);
                 console.log("Owner Balance after first Class minting : ", ownerBalance);
             });
+            it("Should revert First minting after saleStartTime is set and First Signer signature but Incorrect Domain Seperator", async function () {
+
+                domainSeperator = "0x0000000000000000000000000000000000000000000000000000000000000000";
+                const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, firstClassTier]);
+                const messageHashBytes = ethers.utils.arrayify(messageHash);
+
+                await lingoNFT.setFirstSigner(businessSigner.address, {
+                    gasLimit: 30000000
+                });//Set wrong signer
+                firstSignature = await firstSigner.signMessage(messageHashBytes);
+                const { v, r, s } = ethers.utils.splitSignature(firstSignature);
+                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
+                await lingoNFT.setSaleStartTime(SaleStartTime, {
+                    gasLimit: 30000000
+                });
+                await lingoNFT.setFirstClassMintPrice(firstClassMintPrice, {
+                    gasLimit: 30000000
+                });
+                await expect(
+                    lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { value: firstClassMintPrice, gasLimit: 3000000 })
+                ).to.be.revertedWith("Unauthorized Signer");
+            });
             it("Should revert First minting after saleStartTime is set and not First Signer signature", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, firstClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -446,6 +524,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert First minting after saleStartTime is set and First Signer signature but incorrect Tier in message", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, businessClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -467,6 +546,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert First minting after saleStartTime is set and First Signer signature but not First Tier in parameter", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, businessClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
@@ -489,6 +569,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert First class minting if message value is below firstmintPrice", async function () {
 
+                domainSeperator = await lingoNFT.DOMAIN_SEPARATOR();
                 const messageHash = ethers.utils.solidityKeccak256(["bytes32", "address", "uint8"], [domainSeperator, user1.address, firstClassTier]);
                 const messageHashBytes = ethers.utils.arrayify(messageHash);
 
