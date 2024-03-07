@@ -32,6 +32,9 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
     // Add a new mapping to track whether a user has minted for a specific tier
     mapping(address => mapping(Tier => bool)) private _hasMinted;
 
+    // EIP712 Domain Separator
+    bytes32 public DOMAIN_SEPARATOR;
+
    modifier isActive() {
     require(saleStartTime != 0 && block.timestamp >= saleStartTime, "Minting not allowed outside the campaign window");
     _;
@@ -42,6 +45,16 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
         _tierURIs[Tier.BUSINESS_CLASS] = "ipfs://businessClassURI";
         _tierURIs[Tier.FIRST_CLASS] = "ipfs://firstClassURI";
         _tierURIs[Tier.PRIVATE_JET] = "ipfs://privateJetURI";
+        
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes("Lingo NFT")), 
+                keccak256(bytes("1")),
+                block.chainid,
+                address(this)
+            )
+        );
     }
     //function to set the minting price for First Class NFTs
     function setFirstClassMintPrice(uint256 _price) external onlyOwner {
@@ -89,7 +102,7 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
         require(tier == Tier.ECONOMY_CLASS || tier == Tier.BUSINESS_CLASS, "Incorrect Tier");
         require( !_hasMinted[msg.sender][tier], "Address already minted this tier");
         require( getSignerByTier(tier) != address(0), "Invalid Signer");
-        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, tier));
+        bytes32 messageHash = keccak256(abi.encodePacked(DOMAIN_SEPARATOR, msg.sender, tier));
         bytes32 prefixedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
         require( ecrecover(prefixedMessageHash, v, r, s) == getSignerByTier(tier), "Unauthorized Signer");
         
@@ -103,7 +116,7 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
         require(msg.value == firstClassMintPrice, "Ether sent is not correct");
         require(!_hasMinted[msg.sender][Tier.FIRST_CLASS], "Address already minted First");
         require( getSignerByTier(tier) != address(0), "Invalid Signer");
-        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, tier));
+        bytes32 messageHash = keccak256(abi.encodePacked(DOMAIN_SEPARATOR, msg.sender, tier));
         bytes32 prefixedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
         require( ecrecover(prefixedMessageHash, v, r, s) == getSignerByTier(tier), "Unauthorized Signer");
         
