@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 /// @title LingoNFT: An NFT Contract for Lingo SocialFi Campaign
 /// @notice This contract allows for the minting and management of various NFT tiers.
