@@ -184,10 +184,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         _mint(msg.sender, tokenId, _tierURIs[tier], tier);
     }
 
-    function getDomainSeperator() public view returns (bytes32) {
-        return _domainSeparatorV4();
-    }
-
     /// @notice Allows the minting of First Class NFTs
     /// @dev Requires payment equal to the mint price and that the sale is active
     /// @param tier The tier of the NFT to mint (must be First Class)
