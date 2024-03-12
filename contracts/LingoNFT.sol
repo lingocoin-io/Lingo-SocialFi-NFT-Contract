@@ -2,20 +2,23 @@
 pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 /// @title LingoNFT: An NFT Contract for Lingo SocialFi Campaign
 /// @notice This contract allows for the minting and management of various NFT tiers.
 /// @dev Inherits ERC721 for NFT functionality, Ownable for access control, and ReentrancyGuard for security.
-contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
+contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
+    using ECDSA for bytes32;
+
     /// @notice Start time for NFT sale
     uint256 public saleStartTime = 0;
 
-    /// @notice Addresses authorized to sign minting transactions for each tier
-    address public economySigner;
-    address public businessSigner;
-    address public firstSigner;
+    /// @notice Address authorized to sign minting transactions
+    address public mintSigner;
 
     /// @notice Mint price for First Class NFTs
     uint256 public firstClassMintPrice;
@@ -46,9 +49,6 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
     /// @dev Tracks whether an address has minted for a specific tier
     mapping(address => mapping(Tier => bool)) private _hasMinted;
 
-    /// @notice EIP712 Domain Separator for signing transactions
-    bytes32 public domainSeparator;
-
     /// @dev Ensures actions are only taken if the sale has started
     modifier isActive() {
         require(
@@ -59,7 +59,7 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
     }
 
     /// @notice Initializes contract with URIs for each NFT tier
-    constructor() ERC721("Lingo NFT", "LING") {
+    constructor() ERC721("Lingo NFT", "LING") EIP712("Lingo NFT", "1") {
         _tierURIs[
             Tier.ECONOMY_CLASS
         ] = "ipfs://QmZ1hGVKUjYnNzwbjJwVAakFWhDX5n1qDWJ6RZgerDx2LJ";
@@ -72,18 +72,6 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
         _tierURIs[
             Tier.PRIVATE_JET
         ] = "ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx";
-
-        domainSeparator = keccak256(
-            abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
-                keccak256(bytes("Lingo NFT")),
-                keccak256(bytes("1")),
-                block.chainid,
-                address(this)
-            )
-        );
     }
 
     /// @notice Sets the mint price for First Class NFTs
@@ -100,25 +88,11 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
         maxFirstClassSupply = _maxSupply;
     }
 
-    /// @notice Assigns the signer for Economy Class NFTs
-    /// @param _economySigner The address of the Economy Class signer
-    function setEconomySigner(address _economySigner) external onlyOwner {
-        require(_economySigner != address(0), "Signer address cannot be zero");
-        economySigner = _economySigner;
-    }
-
-    /// @notice Assigns the signer for Business Class NFTs
-    /// @param _businessSigner The address of the Business Class signer
-    function setBusinessSigner(address _businessSigner) external onlyOwner {
-        require(_businessSigner != address(0), "Signer address cannot be zero");
-        businessSigner = _businessSigner;
-    }
-
-    /// @notice Assigns the signer for First Class NFTs
-    /// @param _firstSigner The address of the First Class signer
-    function setFirstSigner(address _firstSigner) external onlyOwner {
-        require(_firstSigner != address(0), "Signer address cannot be zero");
-        firstSigner = _firstSigner;
+    /// @notice Assigns the signer
+    /// @param _signer The address of signer
+    function setMintSigner(address _signer) external onlyOwner {
+        require(_signer != address(0), "Signer address cannot be zero");
+        mintSigner = _signer;
     }
 
     /// @notice Sets the URI for a specific NFT tier
@@ -143,21 +117,26 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
         return _tierURIs[tier];
     }
 
-    /// @notice Determines the signer address for a specified tier
-    /// @dev Internal view function to abstract the process of fetching the correct signer
-    /// @param tier The tier for which to retrieve the signer address
-    /// @return The address of the signer for the specified tier
-    function getSignerByTier(Tier tier) internal view returns (address) {
-        if (tier == Tier.ECONOMY_CLASS) {
-            return economySigner;
-        }
-        if (tier == Tier.BUSINESS_CLASS) {
-            return businessSigner;
-        }
-        if (tier == Tier.FIRST_CLASS) {
-            return firstSigner;
-        }
-        return address(0);
+    // /// @notice Determines the signer address for a specified tier
+    // /// @dev Internal view function to abstract the process of fetching the correct signer
+    // /// @param tier The tier for which to retrieve the signer address
+    // /// @return The address of the signer for the specified tier
+    // function getSignerByTier(Tier tier) internal view returns (address) {
+    //     if (tier == Tier.ECONOMY_CLASS) {
+    //         return economySigner;
+    //     }
+    //     if (tier == Tier.BUSINESS_CLASS) {
+    //         return businessSigner;
+    //     }
+    //     if (tier == Tier.FIRST_CLASS) {
+    //         return firstSigner;
+    //     }
+    //     return address(0);
+    // }
+
+    struct MintData {
+        address sender;
+        Tier tier;
     }
 
     /// @notice Allows the minting of NFTs for the Economy and Business classes
@@ -180,21 +159,36 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
             !_hasMinted[msg.sender][tier],
             "Address already minted this tier"
         );
-        require(getSignerByTier(tier) != address(0), "Invalid Signer");
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(domainSeparator, msg.sender, tier)
+        MintData memory data = MintData({sender: msg.sender, tier: tier});
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                data.sender,
+                data.tier
+            )
         );
-        bytes32 prefixedMessageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
+
+        bytes32 messageHash = ECDSA.toTypedDataHash(
+            _domainSeparatorV4(),
+            structHash
         );
+
+        console.log("block.chainId", block.chainid);
+        console.log("ECDSA.recover", ECDSA.recover(messageHash, v, r, s));
+        console.log("mintSigner", mintSigner);
+
         require(
-            ecrecover(prefixedMessageHash, v, r, s) == getSignerByTier(tier),
+            ECDSA.recover(messageHash, v, r, s) == mintSigner,
             "Unauthorized Signer"
         );
 
         uint256 tokenId = getNextTokenId();
         // Mint NFT to the sender
         _mint(msg.sender, tokenId, _tierURIs[tier], tier);
+    }
+
+    function getDomainSeperator() public view returns (bytes32) {
+        return _domainSeparatorV4();
     }
 
     /// @notice Allows the minting of First Class NFTs
@@ -218,15 +212,18 @@ contract LingoNFT is ERC721, Ownable, ReentrancyGuard {
             !_hasMinted[msg.sender][Tier.FIRST_CLASS],
             "Address already minted First"
         );
-        require(getSignerByTier(tier) != address(0), "Invalid Signer");
+        require(
+            firstClassSupplyCounter < maxFirstClassSupply,
+            "Maximum supply reached"
+        );
         bytes32 messageHash = keccak256(
-            abi.encodePacked(domainSeparator, msg.sender, tier)
+            abi.encodePacked(_domainSeparatorV4(), msg.sender, tier)
         );
         bytes32 prefixedMessageHash = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
         );
         require(
-            ecrecover(prefixedMessageHash, v, r, s) == getSignerByTier(tier),
+            ecrecover(prefixedMessageHash, v, r, s) == mintSigner,
             "Unauthorized Signer"
         );
 
