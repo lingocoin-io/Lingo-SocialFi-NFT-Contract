@@ -159,10 +159,12 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
             !_hasMinted[msg.sender][tier],
             "Address already minted this tier"
         );
+
         MintData memory data = MintData({sender: msg.sender, tier: tier});
 
         bytes32 structHash = keccak256(
             abi.encode(
+                keccak256("MintData(address sender,uint8 tier)"),
                 data.sender,
                 data.tier
             )
@@ -172,10 +174,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
             _domainSeparatorV4(),
             structHash
         );
-
-        console.log("block.chainId", block.chainid);
-        console.log("ECDSA.recover", ECDSA.recover(messageHash, v, r, s));
-        console.log("mintSigner", mintSigner);
 
         require(
             ECDSA.recover(messageHash, v, r, s) == mintSigner,
@@ -216,14 +214,24 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
             firstClassSupplyCounter < maxFirstClassSupply,
             "Maximum supply reached"
         );
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(_domainSeparatorV4(), msg.sender, tier)
+
+        MintData memory data = MintData({sender: msg.sender, tier: tier});
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256("MintData(address sender,uint8 tier)"),
+                data.sender,
+                data.tier
+            )
         );
-        bytes32 prefixedMessageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
+
+        bytes32 messageHash = ECDSA.toTypedDataHash(
+            _domainSeparatorV4(),
+            structHash
         );
+
         require(
-            ecrecover(prefixedMessageHash, v, r, s) == mintSigner,
+            ECDSA.recover(messageHash, v, r, s) == mintSigner,
             "Unauthorized Signer"
         );
 
