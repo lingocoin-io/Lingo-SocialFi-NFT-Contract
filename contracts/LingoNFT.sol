@@ -45,6 +45,12 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         PRIVATE_JET
     }
 
+    /// @notice Struct for Mint data
+    struct MintData {
+        address sender;
+        Tier tier;
+    }
+
     /// @dev Tracks whether an address has minted for a specific tier
     mapping(address => mapping(Tier => bool)) private _hasMinted;
 
@@ -114,28 +120,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     /// @return The URI string for the specified tier
     function getTierURI(Tier tier) public view returns (string memory) {
         return _tierURIs[tier];
-    }
-
-    // /// @notice Determines the signer address for a specified tier
-    // /// @dev Internal view function to abstract the process of fetching the correct signer
-    // /// @param tier The tier for which to retrieve the signer address
-    // /// @return The address of the signer for the specified tier
-    // function getSignerByTier(Tier tier) internal view returns (address) {
-    //     if (tier == Tier.ECONOMY_CLASS) {
-    //         return economySigner;
-    //     }
-    //     if (tier == Tier.BUSINESS_CLASS) {
-    //         return businessSigner;
-    //     }
-    //     if (tier == Tier.FIRST_CLASS) {
-    //         return firstSigner;
-    //     }
-    //     return address(0);
-    // }
-
-    struct MintData {
-        address sender;
-        Tier tier;
     }
 
     /// @notice Allows the minting of NFTs for the Economy and Business classes
