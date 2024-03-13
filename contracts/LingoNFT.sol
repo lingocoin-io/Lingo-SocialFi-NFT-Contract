@@ -31,12 +31,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     /// @dev Counter for total minted tokens
     uint256 private _tokenIdCounter;
 
-    /// @dev Mapping to store URI for each token ID
-    mapping(uint256 => string) private _tokenURIs;
-
-    /// @dev Mapping to store URI for each NFT tier
-    mapping(Tier => string) private _tierURIs;
-
     /// @notice Enumeration for NFT tiers
     enum Tier {
         ECONOMY_CLASS,
@@ -44,6 +38,12 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         FIRST_CLASS,
         PRIVATE_JET
     }
+
+    /// @dev Mapping to store Tier for each token ID
+    mapping(uint256 => Tier) private _tokenTier;
+
+    /// @dev Mapping to store URI for each NFT tier
+    mapping(Tier => string) private _tierURIs;
 
     /// @notice Struct for Mint data
     struct MintData {
@@ -165,7 +165,7 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
 
         uint256 tokenId = getNextTokenId();
         // Mint NFT to the sender
-        _mint(msg.sender, tokenId, _tierURIs[tier], tier);
+        _mint(msg.sender, tokenId, tier);
     }
 
     /// @notice Allows the minting of First Class NFTs
@@ -215,7 +215,7 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         );
 
         uint256 tokenId = getNextTokenId();
-        _mint(msg.sender, tokenId, _tierURIs[tier], tier);
+        _mint(msg.sender, tokenId, tier);
     }
 
     /// @notice Allows the contract owner to mint and airdrop Private Jet NFTs to specified addresses
@@ -229,7 +229,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
             _mint(
                 recipients[i],
                 tokenId,
-                _tierURIs[Tier.PRIVATE_JET],
                 Tier.PRIVATE_JET
             );
         }
@@ -245,7 +244,7 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         require(tier != Tier.PRIVATE_JET, "Incorrect Tier");
         for (uint256 i = 0; i < recipients.length; i++) {
             uint256 tokenId = getNextTokenId();
-            _mint(recipients[i], tokenId, _tierURIs[tier], tier);
+            _mint(recipients[i], tokenId, tier);
         }
     }
 
@@ -283,26 +282,25 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     ) public view override returns (string memory) {
         require(_exists(tokenId), "Token does not exist");
         // Combine the base URI and token-specific URI to get the full metadata URI
-        return _tokenURIs[tokenId];
+        Tier tier = _tokenTier[tokenId];
+        return _tierURIs[tier];
     }
 
     /// @notice Mints a new token of a specified tier to a given address with a specified URI
     /// @dev Internal function that handles the logic for minting new tokens
     /// @param to The address to mint the token to
     /// @param tokenId The token ID for the new token
-    /// @param uri The URI for the new token
     /// @param tier The tier of the new token
     function _mint(
         address to,
         uint256 tokenId,
-        string memory uri,
         Tier tier
     ) internal {
         require(!_exists(tokenId), "Token ID already exists");
         require(to != address(0), "Cannot mint to the zero address");
         _hasMinted[msg.sender][tier] = true;
         _tokenIdCounter = _tokenIdCounter + 1;
-        _tokenURIs[tokenId] = uri;
+        _tokenTier[tokenId] = tier;
         _safeMint(to, tokenId);
         if (tier == Tier.FIRST_CLASS) {
             firstClassSupplyCounter += 1;
