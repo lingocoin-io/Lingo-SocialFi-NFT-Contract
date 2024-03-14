@@ -14,7 +14,7 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     using ECDSA for bytes32;
 
     /// @notice Start time for NFT sale
-    uint256 public saleStartTime = 0;
+    uint256 public saleStartTime;
 
     /// @notice Address authorized to sign minting transactions
     address public mintSigner;
@@ -261,12 +261,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         return firstClassSupplyCounter;
     }
 
-    /// @notice Retrieves the sale start time
-    /// @return The UNIX timestamp for when the sale starts
-    function getSaleStartTime() external view returns (uint256) {
-        return saleStartTime;
-    }
-
     /// @notice Retrieves the current total supply of minted tokens
     /// @return The total number of tokens minted
     function getTotalSupply() external view returns (uint256) {
@@ -281,7 +275,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         uint256 tokenId
     ) public view override returns (string memory) {
         require(_exists(tokenId), "Token does not exist");
-        // Combine the base URI and token-specific URI to get the full metadata URI
         Tier tier = _tokenTier[tokenId];
         return _tierURIs[tier];
     }
@@ -305,12 +298,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         if (tier == Tier.FIRST_CLASS) {
             firstClassSupplyCounter += 1;
         }
-    }
-
-    /// @notice Gets the current block timestamp
-    /// @return The current block's timestamp
-    function getCurrentTimestamp() external view returns (uint256) {
-        return block.timestamp;
     }
 
     /// @notice Checks if an account has already minted a specific tier of NFT
