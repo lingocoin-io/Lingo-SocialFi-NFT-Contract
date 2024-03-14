@@ -6,27 +6,16 @@ app.use(express.json());
 
 // Configuration
 const PORT = 3000;
-const ECONOMY_SIGNER = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
-const BUSINESS_SIGNER = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a";
-const FIRST_SIGNER = "0x689af8efa8c651a91ad287602527f3af2fe9f6501a7ac4b061667b5a93e037fd"   
-const BACKEND_VERIFY_URL = 'http://backend-url/api'; 
+const SIGNER_PRIVATE_KEY = "0xde9be858da4a475276426320d5e9262ecfc3ba460bfac56360bfa6c4c28b4ee0";
+const LINGO_NFT_CONTRACT_ADDRESS = "0xcD71582A11f4c60c8FB7685c4BdD1b748c0e764C";
+// const BACKEND_VERIFY_URL = 'http://backend-url/api';
 
 const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545/');
-const economySigner = new ethers.Wallet(ECONOMY_SIGNER, provider);
-const businessSigner = new ethers.Wallet(BUSINESS_SIGNER, provider);
-const firstSigner = new ethers.Wallet(BUSINESS_SIGNER, provider);
+const signer = new ethers.Wallet(SIGNER_PRIVATE_KEY, provider);
 const express = require('express');
 const ethers = require('ethers');
 const axios = require('axios');
 app.use(express.json());
-
-// Function to sign the minting message
-async function signMintingMessage(signer, address, tier) {
-    const messageHash = ethers.utils.solidityKeccak256(['address', 'uint256'], [address, tier]);
-    const signature = await signer.signMessage(ethers.utils.arrayify(messageHash));
-    const splitSignature = ethers.utils.splitSignature(signature);
-    return splitSignature;
-}
 
 app.post('/sign', async (req, res) => {
     const { address, tier } = req.body;
@@ -34,23 +23,26 @@ app.post('/sign', async (req, res) => {
         return res.status(400).send({ error: 'Address and tier are required' });
     }
 
-    let signer;
-    switch (tier) {
-        case 0: // Economy Class
-            signer = economySigner;
-            break;
-        case 1: // Business Class
-            signer = businessSigner;
-            break;
-        case 2: // First Class
-            signer = firstSigner; // Use firstSigner for First Class
-            break;
-        default:
-            return res.status(400).send({ error: 'Invalid tier' });
+    domain = {
+        name: "Lingo NFT",
+        version: "1",
+        chainId: 80001,
+        verifyingContract: LINGO_NFT_CONTRACT_ADDRESS,
     }
 
+    signature = await signer._signTypedData(domain, {
+        MintData: [
+            { name: "sender", type: "address" },
+            { name: "tier", type: "uint8" },
+        ]
+    }, {
+        sender: address,
+        tier: tier
+    })
+
+
     try {
-        const { r, s, v } = await signMintingMessage(signer, address, tier);
+        const { v, r, s } = ethers.utils.splitSignature(signature);
         res.send({ address, tier, r, s, v });
     } catch (err) {
         console.error('Error signing message:', err);
