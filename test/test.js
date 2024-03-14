@@ -1314,15 +1314,6 @@ describe("Lingo NFT Tests", async () => {
         });
     });
 
-    describe("Get Current Timestamp", () => {
-
-        it("returns current timestamp", async () => {
-            const result = await lingoNFT.getCurrentTimestamp();
-            timestamp = BNtoNumber(result);
-            expect(result).to.be.instanceOf(BigNumber);
-        });
-    });
-
     describe("Set Sale Start Date", () => {
 
         it("reverts with Ownable: caller is not the owner", async () => {
@@ -1336,10 +1327,15 @@ describe("Lingo NFT Tests", async () => {
             }
         });
         it("returns Minting Start", async () => {
-            await lingoNFT.connect(owner).setSaleStartTime(Math.floor(Date.now() + 1000), {
+            startTime = Math.floor(Date.now() + 1000)
+            await lingoNFT.connect(owner).setSaleStartTime(startTime, {
                 gasLimit: 30000000
             });
-            expect(BNtoNumber(await lingoNFT.getSaleStartTime())).to.be.above(timestamp);
+            salestartime = await lingoNFT.saleStartTime()
+            console.log("SaleStartTIme : ", salestartime);
+
+            expect(BNtoNumber(await lingoNFT.saleStartTime())).to.be.equal(startTime);
+            
         });
 
     });
@@ -1374,7 +1370,7 @@ describe("Lingo NFT Tests", async () => {
     describe("During Minting Period", () => {
 
         beforeEach(async () => {
-            await lingoNFT.connect(owner).setSaleStartTime(BNtoNumber(await lingoNFT.getCurrentTimestamp()) + 2, {
+            await lingoNFT.connect(owner).setSaleStartTime(Math.floor(Date.now()) + 2, {
                 gasLimit: 30000000
             });
         });
@@ -1456,6 +1452,36 @@ describe("Lingo NFT Tests", async () => {
         });
         it("should correctly airdrop Economy Class NFTs to multiple recipients", async function () {
             await lingoNFT.connect(owner).airdropNFT(recipientAddresses, economyClassTier, {
+                gasLimit: 30000000
+            });
+            const startingTokenId = 0;
+
+            // Check if each recipient received their NFT
+            for (let i = 0; i < recipientAddresses.length; i++) {
+                const tokenId = startingTokenId + i;
+                const ownerOfToken = await lingoNFT.ownerOf(tokenId, {
+                    gasLimit: 30000000
+                });
+                expect(ownerOfToken).to.equal(recipientAddresses[i]);
+            }
+        });
+        it("should correctly airdrop Business Class NFTs to multiple recipients", async function () {
+            await lingoNFT.connect(owner).airdropNFT(recipientAddresses, businessClassTier, {
+                gasLimit: 30000000
+            });
+            const startingTokenId = 0;
+
+            // Check if each recipient received their NFT
+            for (let i = 0; i < recipientAddresses.length; i++) {
+                const tokenId = startingTokenId + i;
+                const ownerOfToken = await lingoNFT.ownerOf(tokenId, {
+                    gasLimit: 30000000
+                });
+                expect(ownerOfToken).to.equal(recipientAddresses[i]);
+            }
+        });
+        it("should correctly airdrop First Class NFTs to multiple recipients", async function () {
+            await lingoNFT.connect(owner).airdropNFT(recipientAddresses, firstClassTier, {
                 gasLimit: 30000000
             });
             const startingTokenId = 0;
