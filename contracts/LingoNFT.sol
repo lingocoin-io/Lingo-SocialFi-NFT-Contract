@@ -33,8 +33,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
 
     /// @notice Enumeration for NFT tiers
     enum Tier {
-        ECONOMY_CLASS,
-        BUSINESS_CLASS,
         FIRST_CLASS,
         PRIVATE_JET
     }
@@ -65,12 +63,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
 
     /// @notice Initializes contract with URIs for each NFT tier
     constructor() ERC721("Lingo NFT", "LING") EIP712("Lingo NFT", "1") {
-        _tierURIs[
-            Tier.ECONOMY_CLASS
-        ] = "ipfs://QmZ1hGVKUjYnNzwbjJwVAakFWhDX5n1qDWJ6RZgerDx2LJ";
-        _tierURIs[
-            Tier.BUSINESS_CLASS
-        ] = "ipfs://QmYQSRxUV2fFwKcX99Q8hixvyc2AsTEJt5TGwZTERD2dXQ";
         _tierURIs[
             Tier.FIRST_CLASS
         ] = "ipfs://QmWsdztWmpXf8hiuGX8p8sXdn6K6J6zWuWWMcgaa6TaP2H";
@@ -120,52 +112,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     /// @return The URI string for the specified tier
     function getTierURI(Tier tier) public view returns (string memory) {
         return _tierURIs[tier];
-    }
-
-    /// @notice Allows the minting of NFTs for the Economy and Business classes
-    /// @dev Requires allowlist verification through a signer and that the sale is active
-    /// @param tier The tier of the NFT to mint (must be Economy or Business)
-    /// @param r The r component of the signature
-    /// @param s The s component of the signature
-    /// @param v The recovery byte of the signature
-    function mintEconomyBusinessClassNFT(
-        Tier tier,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
-    ) external nonReentrant isActive {
-        require(
-            tier == Tier.ECONOMY_CLASS || tier == Tier.BUSINESS_CLASS,
-            "Incorrect Tier"
-        );
-        require(
-            !_hasMinted[msg.sender][tier],
-            "Address already minted this tier"
-        );
-
-        MintData memory data = MintData({sender: msg.sender, tier: tier});
-
-        bytes32 structHash = keccak256(
-            abi.encode(
-                keccak256("MintData(address sender,uint8 tier)"),
-                data.sender,
-                data.tier
-            )
-        );
-
-        bytes32 messageHash = ECDSA.toTypedDataHash(
-            _domainSeparatorV4(),
-            structHash
-        );
-
-        require(
-            ECDSA.recover(messageHash, v, r, s) == mintSigner,
-            "Unauthorized Signer"
-        );
-
-        uint256 tokenId = getNextTokenId();
-        // Mint NFT to the sender
-        _mint(msg.sender, tokenId, tier);
     }
 
     /// @notice Allows the minting of First Class NFTs
