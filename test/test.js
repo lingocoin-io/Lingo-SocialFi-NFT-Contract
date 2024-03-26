@@ -16,10 +16,6 @@ describe("Lingo NFT Tests", async () => {
     let owner;
     let user1;
     let user2;
-    let timestamp;
-
-    // console.log("ethers4", ethers);
-    // [owner, user1, user2] = await ethers.getSigners();
 
     const hhprovider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545");
     owner = new ethers.Wallet("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", hhprovider);//0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
@@ -28,8 +24,6 @@ describe("Lingo NFT Tests", async () => {
 
     signer = new ethers.Wallet("0xde9be858da4a475276426320d5e9262ecfc3ba460bfac56360bfa6c4c28b4ee0", hhprovider); // 0xdD2FD4581271e230360230F9337D5c0430Bf44C0
     wrongSigner = new ethers.Wallet("0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e", hhprovider); // 0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199
-    // firstSigner = new ethers.Wallet("0x689af8efa8c651a91ad287602527f3af2fe9f6501a7ac4b061667b5a93e037fd", hhprovider); // 0xbDA5747bFD65F08deb54cb465eB87D40e51B197E
-    // Compute message hash
     messageHash = ethers.utils.id("hello");
 
     // Sign the message hash
@@ -49,17 +43,10 @@ describe("Lingo NFT Tests", async () => {
         });
         // Test for correctly setting tier URIs
         it("Should correctly set tier URIs for each class", async function () {
-            // Verify the URIs for each tier
-            const economyClassURI = await lingoNFT.getTierURI(0); // Assuming you have a public getter for _tierURIs
-            expect(economyClassURI).to.equal("ipfs://QmZ1hGVKUjYnNzwbjJwVAakFWhDX5n1qDWJ6RZgerDx2LJ");
-
-            const businessClassURI = await lingoNFT.getTierURI(1);
-            expect(businessClassURI).to.equal("ipfs://QmYQSRxUV2fFwKcX99Q8hixvyc2AsTEJt5TGwZTERD2dXQ");
-
-            const firstClassURI = await lingoNFT.getTierURI(2);
+            const firstClassURI = await lingoNFT.getTierURI(0);
             expect(firstClassURI).to.equal("ipfs://QmWsdztWmpXf8hiuGX8p8sXdn6K6J6zWuWWMcgaa6TaP2H");
 
-            const privateJetURI = await lingoNFT.getTierURI(3);
+            const privateJetURI = await lingoNFT.getTierURI(1);
             expect(privateJetURI).to.equal("ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx");
         });
         it("Returns 0 for SaleStartTime", async () => {
@@ -87,20 +74,6 @@ describe("Lingo NFT Tests", async () => {
             expect(await lingoNFT.mintSigner()).to.equal(signer.address);
         });
 
-        // it("Should set Business Class signer", async function () {
-        //     await lingoNFT.connect(owner).setBusinessSigner(businessSigner.address, {
-        //         gasLimit: 30000000
-        //     });
-        //     expect(await lingoNFT.businessSigner()).to.equal(businessSigner.address);
-        // });
-
-        // it("Should set First Class signer", async function () {
-        //     await lingoNFT.connect(owner).setFirstSigner(firstSigner.address, {
-        //         gasLimit: 30000000
-        //     });
-        //     expect(await lingoNFT.firstSigner()).to.equal(firstSigner.address);
-        // });
-
         it("Should set Tier URI", async function () {
             const tier = 0; // Assuming you have an enum or some way to specify the tier
             const uri = "ipfs://newTierURI";
@@ -113,11 +86,9 @@ describe("Lingo NFT Tests", async () => {
     });
     describe("Minting Before Sale Start Time", function () {
 
-        describe("Minting Economy,Business or First Class NFT", function () {
+        describe("Minting First Class NFT", function () {
             let signers;
-            let economyClassTier = 0;
-            let businessClassTier = 1;
-            let firstClassTier = 2;
+            let firstClassTier = 0;
             let firstClassMintPrice;
 
             before(async function () {
@@ -128,69 +99,6 @@ describe("Lingo NFT Tests", async () => {
                 await lingoNFT.deployed();
             });
 
-            it("Should revert Economy minting when saleStartTime is not set", async function () {
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: economyClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-
-                // Attempt to mint before saleStartTime is updated
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(economyClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Minting not allowed");
-            });
-            it("Should revert Business minting when saleStartTime is not set", async function () {
-                // Prepare message to sign
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: economyClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-
-                // Attempt to mint before saleStartTime is updated
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(businessClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Minting not allowed");
-            });
             it("Should revert First Class minting when saleStartTime is not set", async function () {
                 // Prepare message to sign
                 domain = {
@@ -211,7 +119,7 @@ describe("Lingo NFT Tests", async () => {
                     ]
                 }, {
                     sender: user1.address,
-                    tier: economyClassTier
+                    tier: firstClassTier
                 })
 
                 const { v, r, s } = ethers.utils.splitSignature(signature);
@@ -224,48 +132,12 @@ describe("Lingo NFT Tests", async () => {
                     })
                 ).to.be.revertedWith("Minting not allowed");
             });
-            it("Should not allow minting before the sale start time", async function () {
-                const economyClassTier = 0; // Assuming 0 represents Economy Class Tier
-                // Assuming the sale start time is set in the future, simulate valid signing
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: economyClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp + 86400; // 24 hours after the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(economyClassTier, r, s, v)
-                ).to.be.revertedWith("Minting not allowed");
-            });
         });
     });
     describe("Minting After Sale Start Time", function () {
 
-        describe("Minting Economy, Business, and First Class NFT", function () {
-            let economyClassTier = 0;
-            let businessClassTier = 1;
-            let firstClassTier = 2;
+        describe("Mint First Class NFT", function () {
+            let firstClassTier = 0;
             let firstClassMintPrice = 1;
 
             before(async function () {
@@ -288,574 +160,6 @@ describe("Lingo NFT Tests", async () => {
                 await lingoNFT.setFirstClassMintPrice(firstClassMintPrice, {
                     gasLimit: 30000000
                 });
-            });
-
-            it("Should allow Economy minting after saleStartTime is set and Signer signature", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: economyClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(economyClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.emit(lingoNFT, 'Transfer'); // Assuming Transfer event is emitted on successful mint
-            });
-            it("Should revert Economy minting after saleStartTime is set and Signer signature but Incorrect Domain Seperator", async function () {
-
-                domain = {
-                    name: "Test NFT Contract",
-                    version: "10",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: economyClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(economyClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Unauthorized Signer"); // Assuming Transfer event is emitted on successful mint
-            });
-            it("Should revert Economy minting after saleStartTime is set and Wrong Signer signature", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await wrongSigner._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: economyClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(economyClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Unauthorized Signer"); // Assuming Transfer event is emitted on successful mint
-            });
-            it("Should revert Economy minting after saleStartTime is set and Signer signature but Business Class Tier In param", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: economyClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(businessClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Unauthorized Signer");
-            });
-            it("Should revert Economy minting after saleStartTime is set and Economy Signer signature but Business Tier in Signature", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: businessClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(economyClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Unauthorized Signer");
-            });
-            it("Should revert Economy minting after saleStartTime is set and Economy Signer signature but Another User Calls Mint Function", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: economyClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user2).mintEconomyBusinessClassNFT(economyClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Unauthorized Signer");
-            });
-            it("Should revert Economy minting after saleStartTime is set and Signer signature but User tries to mint same tier twice", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: economyClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-                await lingoNFT.connect(user1).mintEconomyBusinessClassNFT(economyClassTier, r, s, v, {
-                    gasLimit: 30000000
-                })
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(economyClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Address already minted this tier");
-            });
-
-            it("Should allow Business minting after saleStartTime is set and Business Signer signature", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: businessClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(businessClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.emit(lingoNFT, 'Transfer'); // Assuming Transfer event is emitted on successful mint
-            });
-            it("Should revert Business minting after saleStartTime is set and Business Signer signature but Incorrect Domain", async function () {
-
-                domain = {
-                    name: "Test NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: businessClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(businessClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Unauthorized Signer");
-            });
-            it("Should revert Business minting after saleStartTime is set and Wrong Signer signature", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await wrongSigner._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: businessClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(businessClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Unauthorized Signer");
-            });
-            it("Should revert Business minting after saleStartTime is set and Business Signer signature but Economy Class Tier in signature", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: economyClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(businessClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Unauthorized Signer");
-            });
-            it("Should revert Business minting after saleStartTime is set and Business Signer signature but Economy Class Tier in param", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: businessClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(economyClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Unauthorized Signer");
-            });
-            it("Should revert Business minting after saleStartTime is set and Business Signer signature but First Class Tier in param", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: businessClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(firstClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Incorrect Tier");
-            });
-            it("Should revert Business minting after saleStartTime is set and Business Signer signature but Undefined Tier in param", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: businessClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    // 8 is undefined tier param
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(8, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWithoutReason;
-            });
-            it("Should revert Business minting after saleStartTime is set and Business Signer signature but Another User Calls Mint Function", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: businessClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-
-                await expect(
-                    lingoNFT.connect(user2).mintEconomyBusinessClassNFT(businessClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Unauthorized Signer");
-            });
-            it("Should revert Business minting after saleStartTime is set and Signer signature but User tries to mint same tier twice", async function () {
-
-                domain = {
-                    name: "Lingo NFT",
-                    version: "1",
-                    chainId: (await ethers.provider.getNetwork()).chainId,
-                    verifyingContract: lingoNFT.address,
-                }
-
-                await lingoNFT.setMintSigner(signer.address, {
-                    gasLimit: 30000000
-                });
-
-                signature = await signer._signTypedData(domain, {
-                    MintData: [
-                        { name: "sender", type: "address" },
-                        { name: "tier", type: "uint8" },
-                    ]
-                }, {
-                    sender: user1.address,
-                    tier: businessClassTier
-                })
-
-                const { v, r, s } = ethers.utils.splitSignature(signature);
-                SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
-                await lingoNFT.setSaleStartTime(SaleStartTime, {
-                    gasLimit: 30000000
-                });
-                await lingoNFT.connect(user1).mintEconomyBusinessClassNFT(businessClassTier, r, s, v, {
-                    gasLimit: 30000000
-                })
-
-                await expect(
-                    lingoNFT.connect(user1).mintEconomyBusinessClassNFT(businessClassTier, r, s, v, {
-                        gasLimit: 30000000
-                    })
-                ).to.be.revertedWith("Address already minted this tier");
             });
 
             it("Should allow First minting after saleStartTime is set and First Signer signature", async function () {
@@ -919,7 +223,7 @@ describe("Lingo NFT Tests", async () => {
                     ]
                 }, {
                     sender: user1.address,
-                    tier: businessClassTier
+                    tier: firstClassTier
                 })
 
                 await lingoNFT.connect(owner).setMaxFirstClassSupply(10, {
@@ -958,7 +262,7 @@ describe("Lingo NFT Tests", async () => {
                     ]
                 }, {
                     sender: user1.address,
-                    tier: businessClassTier
+                    tier: firstClassTier
                 })
 
                 await lingoNFT.connect(owner).setMaxFirstClassSupply(10, {
@@ -997,7 +301,7 @@ describe("Lingo NFT Tests", async () => {
                     ]
                 }, {
                     sender: user1.address,
-                    tier: businessClassTier
+                    tier: 2
                 })
 
                 await lingoNFT.connect(owner).setMaxFirstClassSupply(10, {
@@ -1051,9 +355,10 @@ describe("Lingo NFT Tests", async () => {
                 await lingoNFT.setFirstClassMintPrice(firstClassMintPrice, {
                     gasLimit: 30000000
                 });
+                txn = await lingoNFT.connect(user1).mintFirstClassNFT(3, r, s, v, { value: firstClassMintPrice, gasLimit: 3000000 })
                 await expect(
-                    lingoNFT.connect(user1).mintFirstClassNFT(businessClassTier, r, s, v, { value: firstClassMintPrice, gasLimit: 3000000 })
-                ).to.be.revertedWith("This function is only for FIRST_CLASS tier");
+                    lingoNFT.connect(user1).mintFirstClassNFT(1, r, s, v, { value: firstClassMintPrice, gasLimit: 3000000 })
+                ).to.be.revertedWithoutReason();
             });
             it("Should revert First class minting if message value is below firstmintPrice", async function () {
 
@@ -1439,46 +744,14 @@ describe("Lingo NFT Tests", async () => {
     });
     describe("Airdrop NFT", function () {
         let recipientAddresses = ["0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc", "0x976EA74026E726554dB657fA54763abd0C3a0aa9", "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955", "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"]
-        let economyClassTier = 0;
-        let businessClassTier = 1;
-        let firstClassTier = 2;
-        let privateClassTier = 3;
+        let firstClassTier = 0;
+        let privateClassTier = 1;
 
         it("should revert if not called by the owner", async function () {
-            await expect(lingoNFT.connect(user1).airdropNFT(recipientAddresses, economyClassTier, {
+            await expect(lingoNFT.connect(user1).airdropNFT(recipientAddresses, firstClassTier, {
                 gasLimit: 30000000
             }))
                 .to.be.revertedWith("Ownable: caller is not the owner");
-        });
-        it("should correctly airdrop Economy Class NFTs to multiple recipients", async function () {
-            await lingoNFT.connect(owner).airdropNFT(recipientAddresses, economyClassTier, {
-                gasLimit: 30000000
-            });
-            const startingTokenId = 0;
-
-            // Check if each recipient received their NFT
-            for (let i = 0; i < recipientAddresses.length; i++) {
-                const tokenId = startingTokenId + i;
-                const ownerOfToken = await lingoNFT.ownerOf(tokenId, {
-                    gasLimit: 30000000
-                });
-                expect(ownerOfToken).to.equal(recipientAddresses[i]);
-            }
-        });
-        it("should correctly airdrop Business Class NFTs to multiple recipients", async function () {
-            await lingoNFT.connect(owner).airdropNFT(recipientAddresses, businessClassTier, {
-                gasLimit: 30000000
-            });
-            const startingTokenId = 0;
-
-            // Check if each recipient received their NFT
-            for (let i = 0; i < recipientAddresses.length; i++) {
-                const tokenId = startingTokenId + i;
-                const ownerOfToken = await lingoNFT.ownerOf(tokenId, {
-                    gasLimit: 30000000
-                });
-                expect(ownerOfToken).to.equal(recipientAddresses[i]);
-            }
         });
         it("should correctly airdrop First Class NFTs to multiple recipients", async function () {
             await lingoNFT.connect(owner).airdropNFT(recipientAddresses, firstClassTier, {
