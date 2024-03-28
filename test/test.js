@@ -355,10 +355,9 @@ describe("Lingo NFT Tests", async () => {
                 await lingoNFT.setFirstClassMintPrice(firstClassMintPrice, {
                     gasLimit: 30000000
                 });
-                txn = await lingoNFT.connect(user1).mintFirstClassNFT(3, r, s, v, { value: firstClassMintPrice, gasLimit: 3000000 })
                 await expect(
                     lingoNFT.connect(user1).mintFirstClassNFT(1, r, s, v, { value: firstClassMintPrice, gasLimit: 3000000 })
-                ).to.be.revertedWithoutReason();
+                ).to.be.revertedWith("This function is only for FIRST_CLASS tier");
             });
             it("Should revert First class minting if message value is below firstmintPrice", async function () {
 
