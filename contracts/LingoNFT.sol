@@ -19,9 +19,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     /// @notice Address authorized to sign minting transactions
     address public mintSigner;
 
-    /// @notice Mint price for First Class NFTs
-    uint256 public firstClassMintPrice;
-
     /// @notice Maximum supply of First Class NFTs
     uint256 public maxFirstClassSupply;
 
@@ -69,13 +66,7 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         _tierURIs[
             Tier.PRIVATE_JET
         ] = "ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx";
-    }
-
-    /// @notice Sets the mint price for First Class NFTs
-    /// @param _price New mint price
-    function setFirstClassMintPrice(uint256 _price) external onlyOwner {
-        require(_price > 0, "Price must be greater than zero");
-        firstClassMintPrice = _price;
+        maxFirstClassSupply = 555;
     }
 
     /// @notice Sets the maximum supply for First Class NFTs
@@ -125,12 +116,11 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         bytes32 r,
         bytes32 s,
         uint8 v
-    ) external payable nonReentrant isActive {
+    ) external nonReentrant isActive {
         require(
             tier == Tier.FIRST_CLASS,
             "This function is only for FIRST_CLASS tier"
         );
-        require(msg.value == firstClassMintPrice, "Ether sent is not correct");
         require(
             !_hasMinted[msg.sender][Tier.FIRST_CLASS],
             "Address already minted First"
@@ -172,11 +162,7 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         uint256 tokenId;
         for (uint256 i = 0; i < recipients.length; i++) {
             tokenId = getNextTokenId();
-            _mint(
-                recipients[i],
-                tokenId,
-                Tier.PRIVATE_JET
-            );
+            _mint(recipients[i], tokenId, Tier.PRIVATE_JET);
         }
     }
 
@@ -230,11 +216,7 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     /// @param to The address to mint the token to
     /// @param tokenId The token ID for the new token
     /// @param tier The tier of the new token
-    function _mint(
-        address to,
-        uint256 tokenId,
-        Tier tier
-    ) internal {
+    function _mint(address to, uint256 tokenId, Tier tier) internal {
         require(!_exists(tokenId), "Token ID already exists");
         require(to != address(0), "Cannot mint to the zero address");
         _hasMinted[msg.sender][tier] = true;
