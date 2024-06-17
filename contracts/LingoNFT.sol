@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /// @title LingoNFT: An NFT Contract for Lingo SocialFi Campaign
@@ -12,6 +13,13 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 /// @dev Inherits ERC721 for NFT functionality, Ownable for access control, and ReentrancyGuard for security.
 contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     using ECDSA for bytes32;
+    using Counters for Counters.Counter;
+
+    /// @dev Counter for total minted tokens
+    Counters.Counter private _tokenIdCounter;
+
+    /// @dev Counter for tracking the number of First Class NFTs minted
+    Counters.Counter private _firstClassSupplyCounter;
 
     /// @notice Start time for NFT sale
     uint256 public saleStartTime;
@@ -21,12 +29,6 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
 
     /// @notice Maximum supply of First Class NFTs
     uint256 public maxFirstClassSupply;
-
-    /// @dev Counter for tracking the number of First Class NFTs minted
-    uint256 private firstClassSupplyCounter;
-
-    /// @dev Counter for total minted tokens
-    uint256 private _tokenIdCounter;
 
     /// @notice Enumeration for NFT tiers
     enum Tier {
@@ -106,7 +108,7 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     }
 
     /// @notice Allows the minting of First Class NFTs
-    /// @dev Requires payment equal to the mint price and that the sale is active
+    /// @dev Requires that the sale is active and the provided signature is valid
     /// @param tier The tier of the NFT to mint (must be First Class)
     /// @param r The r component of the signature
     /// @param s The s component of the signature
@@ -126,7 +128,7 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
             "Address already minted First"
         );
         require(
-            firstClassSupplyCounter < maxFirstClassSupply,
+            _firstClassSupplyCounter.current() < maxFirstClassSupply,
             "Maximum supply reached"
         );
 
@@ -150,8 +152,7 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
             "Unauthorized Signer"
         );
 
-        uint256 tokenId = getNextTokenId();
-        _mint(msg.sender, tokenId, tier);
+        _mint(msg.sender, tier);
     }
 
     /// @notice Allows the contract owner to mint and airdrop Private Jet NFTs to specified addresses
@@ -159,10 +160,8 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     function mintPrivateJetNFT(
         address[] calldata recipients
     ) external nonReentrant onlyOwner {
-        uint256 tokenId;
         for (uint256 i = 0; i < recipients.length; i++) {
-            tokenId = getNextTokenId();
-            _mint(recipients[i], tokenId, Tier.PRIVATE_JET);
+            _mint(recipients[i], Tier.PRIVATE_JET);
         }
     }
 
@@ -175,28 +174,14 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
     ) external nonReentrant onlyOwner {
         require(tier != Tier.PRIVATE_JET, "Incorrect Tier");
         for (uint256 i = 0; i < recipients.length; i++) {
-            uint256 tokenId = getNextTokenId();
-            _mint(recipients[i], tokenId, tier);
+            _mint(recipients[i], tier);
         }
-    }
-
-    /// @dev Gets the next available token ID based on the current counter
-    /// @return The next token ID to be minted
-    function getNextTokenId() private view returns (uint256) {
-        uint256 tokenId = _tokenIdCounter;
-        return tokenId;
     }
 
     /// @notice Retrieves the total number of First Class NFTs minted
     /// @return The total number of First Class NFTs minted
     function getFirstClassSupply() public view returns (uint256) {
-        return firstClassSupplyCounter;
-    }
-
-    /// @notice Retrieves the current total supply of minted tokens
-    /// @return The total number of tokens minted
-    function getTotalSupply() external view returns (uint256) {
-        return _tokenIdCounter;
+        return _firstClassSupplyCounter.current();
     }
 
     /// @notice Retrieves the token URI for a given token ID
@@ -211,20 +196,22 @@ contract LingoNFT is ERC721, EIP712, Ownable, ReentrancyGuard {
         return _tierURIs[tier];
     }
 
-    /// @notice Mints a new token of a specified tier to a given address with a specified URI
+    /// @notice Mints a new token of a specified tier to a given address
     /// @dev Internal function that handles the logic for minting new tokens
     /// @param to The address to mint the token to
-    /// @param tokenId The token ID for the new token
     /// @param tier The tier of the new token
-    function _mint(address to, uint256 tokenId, Tier tier) internal {
-        require(!_exists(tokenId), "Token ID already exists");
+    function _mint(address to, Tier tier) internal {
         require(to != address(0), "Cannot mint to the zero address");
-        _hasMinted[msg.sender][tier] = true;
-        _tokenIdCounter = _tokenIdCounter + 1;
+
+        _tokenIdCounter.increment();
+        uint256 tokenId = _tokenIdCounter.current();
+
         _tokenTier[tokenId] = tier;
+        _hasMinted[to][tier] = true;
         _safeMint(to, tokenId);
+
         if (tier == Tier.FIRST_CLASS) {
-            firstClassSupplyCounter += 1;
+            _firstClassSupplyCounter.increment();
         }
     }
 
