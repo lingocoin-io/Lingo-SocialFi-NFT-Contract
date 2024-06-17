@@ -65,34 +65,6 @@ contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
         maxFirstClassSupply = 555;
     }
 
-    /// @notice Sets the maximum supply for First Class NFTs
-    /// @param _maxSupply New maximum supply
-    function setMaxFirstClassSupply(uint256 _maxSupply) external onlyOwner {
-        require(_maxSupply > 0, "Max supply must be greater than zero");
-        maxFirstClassSupply = _maxSupply;
-    }
-
-    /// @notice Assigns the signer
-    /// @param _signer The address of signer
-    function setMintSigner(address _signer) external onlyOwner {
-        require(_signer != address(0), "Signer address cannot be zero");
-        mintSigner = _signer;
-    }
-
-    /// @notice Sets the URI for a specific NFT tier
-    /// @param tier The NFT tier
-    /// @param uri The new URI
-    function setTierURI(Tier tier, string calldata uri) external onlyOwner {
-        require(bytes(uri).length > 0, "URI cannot be empty");
-        tier == Tier.FIRST_CLASS ? firstClassURI = uri : privateJetURI = uri;
-    }
-
-    /// @notice Sets the start time for the NFT sale
-    /// @param _startDate The start time as a UNIX timestamp
-    function setSaleStartTime(uint256 _startDate) external onlyOwner {
-        saleStartTime = _startDate;
-    }
-
     /// @notice Allows the minting of First Class NFTs
     /// @dev Requires that the sale is active and the provided signature is valid
     /// @param r The r component of the signature
@@ -135,6 +107,44 @@ contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
         _mint(msg.sender, Tier.FIRST_CLASS);
     }
 
+    /// @notice Sets the maximum supply for First Class NFTs
+    /// @param _maxSupply New maximum supply
+    function setMaxFirstClassSupply(uint256 _maxSupply) external onlyOwner {
+        require(_maxSupply > 0, "Max supply must be greater than zero");
+        maxFirstClassSupply = _maxSupply;
+    }
+
+    /// @notice Assigns the signer
+    /// @param _signer The address of signer
+    function setMintSigner(address _signer) external onlyOwner {
+        require(_signer != address(0), "Signer address cannot be zero");
+        mintSigner = _signer;
+    }
+
+    /// @notice Sets the URI for a specific NFT tier
+    /// @param tier The NFT tier
+    /// @param uri The new URI
+    function setTierURI(Tier tier, string calldata uri) external onlyOwner {
+        require(bytes(uri).length > 0, "URI cannot be empty");
+        tier == Tier.FIRST_CLASS ? firstClassURI = uri : privateJetURI = uri;
+    }
+
+    /// @notice Sets the start time for the NFT sale
+    /// @param _startDate The start time as a UNIX timestamp
+    function setSaleStartTime(uint256 _startDate) external onlyOwner {
+        saleStartTime = _startDate;
+    }
+
+    /// @notice Withdraws contract balance to the owner's address
+    /// @dev Only callable by the contract owner
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds left to withdraw");
+        // Transfer funds to the owner's address
+        (bool sent, ) = owner().call{value: balance}("");
+        require(sent, "Transfer failed.");
+    }
+
     /// @notice Airdrops NFTs of a specified tier to multiple addresses
     /// @param tier The tier of NFTs to airdrop
     /// @param recipients The addresses to receive the NFTs
@@ -145,6 +155,17 @@ contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
         for (uint256 i = 0; i < recipients.length; i++) {
             _mint(recipients[i], tier);
         }
+    }
+
+    /// @notice Checks if an account has already minted a specific tier of NFT
+    /// @param account The address to check
+    /// @param tier The tier to check for
+    /// @return true if the account has already minted an NFT of the specified tier
+    function hasMinted(
+        address account,
+        Tier tier
+    ) external view returns (bool) {
+        return _hasMinted[account][tier];
     }
 
     /// @notice Retrieves the total number of First Class NFTs minted
@@ -181,26 +202,5 @@ contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
         _hasMinted[to][tier] = true;
 
         _safeMint(to, tokenId);
-    }
-
-    /// @notice Checks if an account has already minted a specific tier of NFT
-    /// @param account The address to check
-    /// @param tier The tier to check for
-    /// @return true if the account has already minted an NFT of the specified tier
-    function hasMinted(
-        address account,
-        Tier tier
-    ) external view returns (bool) {
-        return _hasMinted[account][tier];
-    }
-
-    /// @notice Withdraws contract balance to the owner's address
-    /// @dev Only callable by the contract owner
-    function withdraw() external onlyOwner {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No funds left to withdraw");
-        // Transfer funds to the owner's address
-        (bool sent, ) = owner().call{value: balance}("");
-        require(sent, "Transfer failed.");
     }
 }
