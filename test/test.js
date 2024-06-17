@@ -550,7 +550,7 @@ describe("Lingo NFT Tests", async () => {
                 });
 
                 // Assuming token IDs start from 1 and no other tokens have been minted yet
-                const startingTokenId = 0;
+                const startingTokenId = 1;
 
                 // Check if each recipient received their NFT
                 for (let i = 0; i < recipientAddresses.length; i++) {
@@ -577,7 +577,8 @@ describe("Lingo NFT Tests", async () => {
             await lingoNFT.connect(owner).airdropNFT(recipientAddresses, firstClassTier, {
                 gasLimit: 30000000
             });
-            const startingTokenId = 0;
+
+            const startingTokenId = 1;
 
             // Check if each recipient received their NFT
             for (let i = 0; i < recipientAddresses.length; i++) {
