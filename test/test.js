@@ -4,11 +4,8 @@ const { ethers } = require('hardhat');
 
 describe("Lingo NFT Tests", async () => {
     let lingoNFT;
-    let owner;
-    let user1;
-    let user2;
 
-    [
+    let [
         owner,
         user1,
         user2,
@@ -20,6 +17,8 @@ describe("Lingo NFT Tests", async () => {
 
     const [FIRST_CLASS_URI, PRIVATE_JET_URI] = ["ipfs://QmWsdztWmpXf8hiuGX8p8sXdn6K6J6zWuWWMcgaa6TaP2H", "ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx"]
 
+    const FIRST_CLASS_SUPPLY = 2;
+
     let messageHash = ethers.utils.id("hello");
 
     // Sign the message hash
@@ -29,7 +28,7 @@ describe("Lingo NFT Tests", async () => {
 
     beforeEach(async () => {
         const NFT = await ethers.getContractFactory("LingoNFT", owner);
-        lingoNFT = await NFT.deploy({ gasLimit: 30000000 });
+        lingoNFT = await NFT.deploy(FIRST_CLASS_SUPPLY, { gasLimit: 30000000 });
         await lingoNFT.deployed();
     });
 
@@ -97,13 +96,13 @@ describe("Lingo NFT Tests", async () => {
                 signers = await ethers.getSigners();
                 // Deploy the contract
                 const NFT = await ethers.getContractFactory("LingoNFT");
-                lingoNFT = await NFT.deploy();
+                lingoNFT = await NFT.deploy(FIRST_CLASS_SUPPLY);
                 await lingoNFT.deployed();
             });
 
             it("Should revert First Class minting when saleStartTime is not set", async function () {
                 // Prepare message to sign
-                domain = {
+                const domain = {
                     name: "Lingo NFT",
                     version: "1",
                     chainId: (await ethers.provider.getNetwork()).chainId,
@@ -144,7 +143,7 @@ describe("Lingo NFT Tests", async () => {
             before(async function () {
                 // Deploy the contract
                 const NFT = await ethers.getContractFactory("LingoNFT");
-                lingoNFT = await NFT.deploy();
+                lingoNFT = await NFT.deploy(FIRST_CLASS_SUPPLY);
                 await lingoNFT.deployed();
 
                 // Set a past sale start time
@@ -159,7 +158,7 @@ describe("Lingo NFT Tests", async () => {
 
             it("Should allow First minting after saleStartTime is set and First Signer signature", async function () {
 
-                domain = {
+                const domain = {
                     name: "Lingo NFT",
                     version: "1",
                     chainId: (await ethers.provider.getNetwork()).chainId,
@@ -197,7 +196,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert First minting after saleStartTime is set and First Signer signature but Incorrect Domain", async function () {
 
-                domain = {
+                const domain = {
                     name: "Test NFT Contract",
                     version: "1",
                     chainId: (await ethers.provider.getNetwork()).chainId,
@@ -233,7 +232,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert First minting after saleStartTime is set but Wrong Signer signature", async function () {
 
-                domain = {
+                const domain = {
                     name: "Lingo NFT",
                     version: "1",
                     chainId: (await ethers.provider.getNetwork()).chainId,
@@ -269,7 +268,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert First minting after saleStartTime is set and First Signer signature but incorrect Tier in message", async function () {
 
-                domain = {
+                const domain = {
                     name: "Lingo NFT",
                     version: "1",
                     chainId: (await ethers.provider.getNetwork()).chainId,
@@ -305,7 +304,7 @@ describe("Lingo NFT Tests", async () => {
             });
             it("Should revert First minting after saleStartTime is set and First Signer signature but not First Tier in parameter", async function () {
 
-                domain = {
+                const domain = {
                     name: "Lingo NFT",
                     version: "1",
                     chainId: (await ethers.provider.getNetwork()).chainId,
@@ -336,9 +335,8 @@ describe("Lingo NFT Tests", async () => {
                     gasLimit: 30000000
                 });
             });
-
             it("Should fail to mint First Class NFT with Maximum supply reached", async function () {
-                domain = {
+                const domain = {
                     name: "Lingo NFT",
                     version: "1",
                     chainId: (await ethers.provider.getNetwork()).chainId,
@@ -387,7 +385,7 @@ describe("Lingo NFT Tests", async () => {
                 ).to.be.revertedWith("Maximum supply reached");
             });
             it("Should revert First minting after saleStartTime is set and Signer signature but Another User Calls Mint Function", async function () {
-                domain = {
+                const domain = {
                     name: "Lingo NFT",
                     version: "1",
                     chainId: (await ethers.provider.getNetwork()).chainId,
@@ -412,7 +410,7 @@ describe("Lingo NFT Tests", async () => {
                     gasLimit: 30000000
                 });
 
-                var { v, r, s } = ethers.utils.splitSignature(signature);
+                const { v, r, s } = ethers.utils.splitSignature(signature);
                 SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
                 await lingoNFT.setSaleStartTime(SaleStartTime, {
                     gasLimit: 30000000
@@ -423,7 +421,7 @@ describe("Lingo NFT Tests", async () => {
                 ).to.be.revertedWith("Unauthorized Signer");
             });
             it("Should revert First minting after saleStartTime is set and Signer signature but User mints first twice", async function () {
-                domain = {
+                const domain = {
                     name: "Lingo NFT",
                     version: "1",
                     chainId: (await ethers.provider.getNetwork()).chainId,
@@ -448,7 +446,7 @@ describe("Lingo NFT Tests", async () => {
                     gasLimit: 30000000
                 });
 
-                var { v, r, s } = ethers.utils.splitSignature(signature);
+                const { v, r, s } = ethers.utils.splitSignature(signature);
                 SaleStartTime = (await ethers.provider.getBlock('latest')).timestamp - 86400; // 24 hours before the current time
                 await lingoNFT.setSaleStartTime(SaleStartTime, {
                     gasLimit: 30000000
@@ -479,7 +477,6 @@ describe("Lingo NFT Tests", async () => {
                 gasLimit: 30000000
             });
             salestartime = await lingoNFT.saleStartTime()
-            console.log("SaleStartTIme : ", salestartime);
 
             expect((await lingoNFT.saleStartTime()).toNumber()).to.be.equal(startTime);
         });
@@ -550,8 +547,8 @@ describe("Lingo NFT Tests", async () => {
                     gasLimit: 30000000
                 });
 
-                // Assuming token IDs start from 1 and no other tokens have been minted yet
-                const startingTokenId = 1;
+                // Assuming token IDs start from 0 and no other tokens have been minted yet
+                const startingTokenId = 0;
 
                 // Check if each recipient received their NFT
                 for (let i = 0; i < recipientAddresses.length; i++) {
@@ -566,8 +563,8 @@ describe("Lingo NFT Tests", async () => {
                     gasLimit: 30000000
                 });
 
-                // Assuming token IDs start from 1 and no other tokens have been minted yet
-                const startingTokenId = 1;
+                // Assuming token IDs start from 0 and no other tokens have been minted yet
+                const startingTokenId = 0;
 
                 // Check if each recipient received their NFT
                 for (let i = 0; i < recipientAddresses.length; i++) {
@@ -593,7 +590,7 @@ describe("Lingo NFT Tests", async () => {
                 gasLimit: 30000000
             });
 
-            const startingTokenId = 1;
+            const startingTokenId = 0;
 
             // Check if each recipient received their NFT
             for (let i = 0; i < recipientAddresses.length; i++) {
@@ -616,7 +613,7 @@ describe("Lingo NFT Tests", async () => {
             // Deploy your contract here before each test
             const LingoNFT = await ethers.getContractFactory("LingoNFT");
             [owner, user1, user2] = await ethers.getSigners();
-            lingoNFT = await LingoNFT.deploy();
+            lingoNFT = await LingoNFT.deploy(FIRST_CLASS_SUPPLY);
             await lingoNFT.deployed();
         });
 
