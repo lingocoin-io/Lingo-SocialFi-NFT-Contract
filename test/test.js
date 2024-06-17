@@ -16,12 +16,16 @@ describe("Lingo NFT Tests", async () => {
         wrongSigner,
     ] = await ethers.getSigners();
 
-    messageHash = ethers.utils.id("hello");
+    const [FIRST_CLASS_TIER, PRIVATE_JET_TIER] = [0, 1];
+
+    const [FIRST_CLASS_URI, PRIVATE_JET_URI] = ["ipfs://QmWsdztWmpXf8hiuGX8p8sXdn6K6J6zWuWWMcgaa6TaP2H", "ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx"]
+
+    let messageHash = ethers.utils.id("hello");
 
     // Sign the message hash
     let messageBytes = ethers.utils.arrayify(messageHash);
-    signature = await signer.signMessage(messageBytes);
-    wrongSignature = await wrongSigner.signMessage(messageBytes);
+    let signature = await signer.signMessage(messageBytes);
+    let wrongSignature = await wrongSigner.signMessage(messageBytes);
 
     beforeEach(async () => {
         const NFT = await ethers.getContractFactory("LingoNFT", owner);
@@ -35,11 +39,11 @@ describe("Lingo NFT Tests", async () => {
         });
         // Test for correctly setting tier URIs
         it("Should correctly set tier URIs for each class", async function () {
-            const firstClassURI = await lingoNFT.getTierURI(0);
-            expect(firstClassURI).to.equal("ipfs://QmWsdztWmpXf8hiuGX8p8sXdn6K6J6zWuWWMcgaa6TaP2H");
+            const firstClassURI = await lingoNFT.firstClassURI();
+            expect(firstClassURI).to.equal(FIRST_CLASS_URI);
 
-            const privateJetURI = await lingoNFT.getTierURI(1);
-            expect(privateJetURI).to.equal("ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx");
+            const privateJetURI = await lingoNFT.privateJetURI();
+            expect(privateJetURI).to.equal(PRIVATE_JET_URI);
         });
         it("Returns 0 for SaleStartTime", async () => {
             expect(await lingoNFT.saleStartTime()).to.equal(0);
@@ -70,10 +74,15 @@ describe("Lingo NFT Tests", async () => {
         it("Should set Tier URI", async function () {
             const tier = 0; // Assuming you have an enum or some way to specify the tier
             const uri = "ipfs://newTierURI";
-            await lingoNFT.connect(owner).setTierURI(tier, uri, {
+            await lingoNFT.connect(owner).setTierURI(FIRST_CLASS_TIER, uri, {
                 gasLimit: 30000000
             });
-            expect(await lingoNFT.getTierURI(tier)).to.equal(uri);
+            await lingoNFT.connect(owner).setTierURI(PRIVATE_JET_TIER, uri, {
+                gasLimit: 30000000
+            });
+
+            expect(await lingoNFT.firstClassURI()).to.equal(uri);
+            expect(await lingoNFT.privateJetURI()).to.equal(uri);
         });
 
     });
@@ -119,10 +128,10 @@ describe("Lingo NFT Tests", async () => {
 
                 // Attempt to mint before saleStartTime is updated
                 await expect(
-                    lingoNFT.connect(user2).mintFirstClassNFT(firstClassTier, r, s, v, {
+                    lingoNFT.connect(user2).mintFirstClassNFT(r, s, v, {
                         gasLimit: 30000000
                     })
-                ).to.be.revertedWith("Minting not allowed");
+                ).to.be.revertedWith("Sale has not started");
             });
         });
     });
@@ -181,7 +190,7 @@ describe("Lingo NFT Tests", async () => {
                     gasLimit: 30000000
                 });
                 await expect(
-                    lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { gasLimit: 30000000 })
+                    lingoNFT.connect(user1).mintFirstClassNFT(r, s, v, { gasLimit: 30000000 })
                 ).to.emit(lingoNFT, 'Transfer');
                 contractBalance = await ethers.provider.getBalance(lingoNFT.address);
                 ownerBalance = await ethers.provider.getBalance(owner.address);
@@ -219,7 +228,7 @@ describe("Lingo NFT Tests", async () => {
                     gasLimit: 30000000
                 });
                 await expect(
-                    lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { gasLimit: 3000000 })
+                    lingoNFT.connect(user1).mintFirstClassNFT(r, s, v, { gasLimit: 3000000 })
                 ).to.be.revertedWith("Unauthorized Signer");
             });
             it("Should revert First minting after saleStartTime is set but Wrong Signer signature", async function () {
@@ -255,7 +264,7 @@ describe("Lingo NFT Tests", async () => {
                     gasLimit: 30000000
                 });
                 await expect(
-                    lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { gasLimit: 3000000 })
+                    lingoNFT.connect(user1).mintFirstClassNFT(r, s, v, { gasLimit: 3000000 })
                 ).to.be.revertedWith("Unauthorized Signer");
             });
             it("Should revert First minting after saleStartTime is set and First Signer signature but incorrect Tier in message", async function () {
@@ -291,7 +300,7 @@ describe("Lingo NFT Tests", async () => {
                     gasLimit: 30000000
                 });
                 await expect(
-                    lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { gasLimit: 3000000 })
+                    lingoNFT.connect(user1).mintFirstClassNFT(r, s, v, { gasLimit: 3000000 })
                 ).to.be.revertedWith("Unauthorized Signer");
             });
             it("Should revert First minting after saleStartTime is set and First Signer signature but not First Tier in parameter", async function () {
@@ -326,9 +335,6 @@ describe("Lingo NFT Tests", async () => {
                 await lingoNFT.setSaleStartTime(SaleStartTime, {
                     gasLimit: 30000000
                 });
-                await expect(
-                    lingoNFT.connect(user1).mintFirstClassNFT(1, r, s, v, { gasLimit: 3000000 })
-                ).to.be.revertedWith("This function is only for FIRST_CLASS tier");
             });
 
             it("Should fail to mint First Class NFT with Maximum supply reached", async function () {
@@ -362,7 +368,7 @@ describe("Lingo NFT Tests", async () => {
                 await lingoNFT.setSaleStartTime(SaleStartTime, {
                     gasLimit: 30000000
                 });
-                await lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { gasLimit: 30000000 })
+                await lingoNFT.connect(user1).mintFirstClassNFT(r, s, v, { gasLimit: 30000000 })
 
                 signature2 = await signer._signTypedData(domain, {
                     MintData: [
@@ -377,7 +383,7 @@ describe("Lingo NFT Tests", async () => {
                 var { v, r, s } = ethers.utils.splitSignature(signature2);
 
                 await expect(
-                    lingoNFT.connect(user2).mintFirstClassNFT(firstClassTier, r, s, v, { gasLimit: 3000000 })
+                    lingoNFT.connect(user2).mintFirstClassNFT(r, s, v, { gasLimit: 3000000 })
                 ).to.be.revertedWith("Maximum supply reached");
             });
             it("Should revert First minting after saleStartTime is set and Signer signature but Another User Calls Mint Function", async function () {
@@ -413,7 +419,7 @@ describe("Lingo NFT Tests", async () => {
                 });
 
                 await expect(
-                    lingoNFT.connect(user2).mintFirstClassNFT(firstClassTier, r, s, v, { gasLimit: 3000000 })
+                    lingoNFT.connect(user2).mintFirstClassNFT(r, s, v, { gasLimit: 3000000 })
                 ).to.be.revertedWith("Unauthorized Signer");
             });
             it("Should revert First minting after saleStartTime is set and Signer signature but User mints first twice", async function () {
@@ -447,10 +453,10 @@ describe("Lingo NFT Tests", async () => {
                 await lingoNFT.setSaleStartTime(SaleStartTime, {
                     gasLimit: 30000000
                 });
-                await lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { gasLimit: 3000000 })
+                await lingoNFT.connect(user1).mintFirstClassNFT(r, s, v, { gasLimit: 3000000 })
 
                 await expect(
-                    lingoNFT.connect(user1).mintFirstClassNFT(firstClassTier, r, s, v, { gasLimit: 3000000 })
+                    lingoNFT.connect(user1).mintFirstClassNFT(r, s, v, { gasLimit: 3000000 })
                 ).to.be.revertedWith("Address already minted First");
             });
         });
@@ -528,24 +534,19 @@ describe("Lingo NFT Tests", async () => {
         describe("Airdrop Private Jet NFT", () => {
             let recipientAddresses = ["0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc", "0x976EA74026E726554dB657fA54763abd0C3a0aa9", "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955", "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"]
             it("reverts with Ownable: caller is not the owner", async () => {
-                try {
-                    await lingoNFT.connect(user1).mintPrivateJetNFT(recipientAddresses, {
+                    await expect(lingoNFT.connect(user1).airdropNFT(PRIVATE_JET_TIER, recipientAddresses, {
                         gasLimit: 30000000
-                    });
-                    assert.fail("Expected function to revert");
-                } catch (error) {
-                    expect(error.message).to.contain("Ownable: caller is not the owner");
-                }
+                    })).to.be.revertedWith("Ownable: caller is not the owner");
             })
             it("returns true", async () => {
-                const result = await lingoNFT.connect(owner).mintPrivateJetNFT(recipientAddresses, {
+                const result = await lingoNFT.connect(owner).airdropNFT(PRIVATE_JET_TIER,recipientAddresses, {
                     gasLimit: 30000000
                 });
                 expect(result).to.not.haveOwnProperty("error");
             })
             it("should correctly mint and airdrop Private Jet NFTs to multiple recipients", async () => {
                 // Perform the minting by the owner
-                await lingoNFT.connect(owner).mintPrivateJetNFT(recipientAddresses, {
+                await lingoNFT.connect(owner).airdropNFT(PRIVATE_JET_TIER, recipientAddresses, {
                     gasLimit: 30000000
                 });
 
@@ -559,22 +560,36 @@ describe("Lingo NFT Tests", async () => {
                     expect(ownerOfToken).to.equal(recipientAddresses[i]);
                 }
             })
+            it("should mint the right tier", async () => {
+                // Perform the minting by the owner
+                await lingoNFT.connect(owner).airdropNFT(PRIVATE_JET_TIER, recipientAddresses, {
+                    gasLimit: 30000000
+                });
+
+                // Assuming token IDs start from 1 and no other tokens have been minted yet
+                const startingTokenId = 1;
+
+                // Check if each recipient received their NFT
+                for (let i = 0; i < recipientAddresses.length; i++) {
+                    const tokenId = startingTokenId + i;
+                    const uri = await lingoNFT.tokenURI(tokenId);
+                    expect(uri).to.equal(PRIVATE_JET_URI);
+                }
+            })
         });
     });
 
     describe("Airdrop NFT", function () {
         let recipientAddresses = ["0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc", "0x976EA74026E726554dB657fA54763abd0C3a0aa9", "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955", "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"]
-        let firstClassTier = 0;
-        let privateClassTier = 1;
 
         it("should revert if not called by the owner", async function () {
-            await expect(lingoNFT.connect(user1).airdropNFT(recipientAddresses, firstClassTier, {
+            await expect(lingoNFT.connect(user1).airdropNFT(FIRST_CLASS_TIER,recipientAddresses, {
                 gasLimit: 30000000
             }))
                 .to.be.revertedWith("Ownable: caller is not the owner");
         });
         it("should correctly airdrop First Class NFTs to multiple recipients", async function () {
-            await lingoNFT.connect(owner).airdropNFT(recipientAddresses, firstClassTier, {
+            await lingoNFT.connect(owner).airdropNFT(FIRST_CLASS_TIER, recipientAddresses, {
                 gasLimit: 30000000
             });
 
@@ -589,14 +604,6 @@ describe("Lingo NFT Tests", async () => {
                 expect(ownerOfToken).to.equal(recipientAddresses[i]);
             }
         });
-        it("should revert when attempting to airdrop Private Jet Class NFTs ", async function () {
-            // Assuming FIRST_CLASS is not allowed for airdrop based on your function logic
-            await expect(lingoNFT.connect(owner).airdropNFT(recipientAddresses, privateClassTier, {
-                gasLimit: 30000000
-            }))
-                .to.be.revertedWith("Incorrect Tier");
-        })
-
     });
 
     describe("Withdraw Function", function () {
