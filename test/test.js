@@ -129,7 +129,7 @@ describe("Lingo NFT Tests", async () => {
           lingoNFT.connect(user2).mintFirstClassNFT(r, s, v, {
             gasLimit: 30000000,
           }),
-        ).to.be.revertedWith("Sale has not started");
+        ).to.be.revertedWithCustomError(lingoNFT, "NotStarted");
       });
     });
   });
@@ -239,7 +239,7 @@ describe("Lingo NFT Tests", async () => {
           lingoNFT
             .connect(user1)
             .mintFirstClassNFT(r, s, v, { gasLimit: 3000000 }),
-        ).to.be.revertedWith("Unauthorized Signer");
+        ).to.be.revertedWithCustomError(lingoNFT, "InvalidSignature");
       });
       it("Should revert First minting after saleStartTime is set but Wrong Signer signature", async function () {
         const domain = {
@@ -281,7 +281,7 @@ describe("Lingo NFT Tests", async () => {
           lingoNFT
             .connect(user1)
             .mintFirstClassNFT(r, s, v, { gasLimit: 3000000 }),
-        ).to.be.revertedWith("Unauthorized Signer");
+        ).to.be.revertedWithCustomError(lingoNFT, "InvalidSignature");
       });
       it("Should revert First minting after saleStartTime is set and First Signer signature but incorrect Tier in message", async function () {
         const domain = {
@@ -323,7 +323,7 @@ describe("Lingo NFT Tests", async () => {
           lingoNFT
             .connect(user1)
             .mintFirstClassNFT(r, s, v, { gasLimit: 3000000 }),
-        ).to.be.revertedWith("Unauthorized Signer");
+        ).to.be.revertedWithCustomError(lingoNFT, "InvalidSignature");
       });
       it("Should revert First minting after saleStartTime is set and First Signer signature but not First Tier in parameter", async function () {
         const domain = {
@@ -422,7 +422,7 @@ describe("Lingo NFT Tests", async () => {
           lingoNFT
             .connect(user2)
             .mintFirstClassNFT(r, s, v, { gasLimit: 3000000 }),
-        ).to.be.revertedWith("Maximum supply reached");
+        ).to.be.revertedWithCustomError(lingoNFT, "MaxSupplyReached");
       });
       it("Should revert First minting after saleStartTime is set and Signer signature but Another User Calls Mint Function", async function () {
         const domain = {
@@ -465,7 +465,7 @@ describe("Lingo NFT Tests", async () => {
           lingoNFT
             .connect(user2)
             .mintFirstClassNFT(r, s, v, { gasLimit: 3000000 }),
-        ).to.be.revertedWith("Unauthorized Signer");
+        ).to.be.revertedWithCustomError(lingoNFT, "InvalidSignature");
       });
       it("Should revert First minting after saleStartTime is set and Signer signature but User mints first twice", async function () {
         const domain = {
@@ -511,20 +511,18 @@ describe("Lingo NFT Tests", async () => {
           lingoNFT
             .connect(user1)
             .mintFirstClassNFT(r, s, v, { gasLimit: 3000000 }),
-        ).to.be.revertedWith("Address already minted First");
+        ).to.be.revertedWithCustomError(lingoNFT, "Unauthorized");
       });
     });
   });
 
   describe("Set Sale Start Date", () => {
     it("reverts with Ownable: caller is not the owner", async () => {
-      try {
-        await lingoNFT.connect(user1).setSaleStartTime(0, {
+      await expect(
+        lingoNFT.connect(user1).setSaleStartTime(0, {
           gasLimit: 30000000,
-        });
-      } catch (error) {
-        expect(error.message).to.contain("Ownable: caller is not the owner");
-      }
+        }),
+      ).to.be.revertedWithCustomError(lingoNFT, "OwnableUnauthorizedAccount");
     });
     it("returns Minting Start", async () => {
       startTime = Math.floor(Date.now() + 1000);
@@ -569,20 +567,17 @@ describe("Lingo NFT Tests", async () => {
     });
     describe("Set Signer", async () => {
       it("reverts with Ownable: caller is not the owner", async () => {
-        try {
-          await lingoNFT
+        await expect(
+          lingoNFT
             .connect(user1)
             .setMintSigner("0xdD2FD4581271e230360230F9337D5c0430Bf44C0", {
               gasLimit: 30000000,
-            });
-          assert.fail("Expected function to revert");
-        } catch (error) {
-          expect(error.message).to.contain("Ownable: caller is not the owner");
-        }
+            }),
+        ).to.be.revertedWithCustomError(lingoNFT, "OwnableUnauthorizedAccount");
       });
       it("returns true", async () => {
         try {
-          const result = await lingoNFT
+          await lingoNFT
             .connect(owner)
             .setMintSigner("0xdD2FD4581271e230360230F9337D5c0430Bf44C0", {
               gasLimit: 30000000,
@@ -610,7 +605,7 @@ describe("Lingo NFT Tests", async () => {
             .airdropNFT(PRIVATE_JET_TIER, recipientAddresses, {
               gasLimit: 30000000,
             }),
-        ).to.be.revertedWith("Ownable: caller is not the owner");
+        ).to.be.revertedWithCustomError(lingoNFT, "OwnableUnauthorizedAccount");
       });
       it("returns true", async () => {
         const result = await lingoNFT
@@ -674,7 +669,7 @@ describe("Lingo NFT Tests", async () => {
           .airdropNFT(FIRST_CLASS_TIER, recipientAddresses, {
             gasLimit: 30000000,
           }),
-      ).to.be.revertedWith("Ownable: caller is not the owner");
+      ).to.be.revertedWithCustomError(lingoNFT, "OwnableUnauthorizedAccount");
     });
     it("should correctly airdrop First Class NFTs to multiple recipients", async function () {
       await lingoNFT
