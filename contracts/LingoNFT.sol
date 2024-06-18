@@ -13,25 +13,11 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 contract LingoNFT is ERC721, EIP712, Ownable {
     using ECDSA for bytes32;
 
-    uint256 private _nextTokenId;
-    uint256 public privateJetSupply;
-
-    /// @notice Start time for NFT sale
-    uint256 public saleStartTime;
-
-    /// @notice Address authorized to sign minting transactions
-    address public mintSigner;
-
-    /// @notice Maximum supply of First Class NFTs
-    uint256 public maxFirstClassSupply;
-
     /// @notice Enumeration for NFT tiers
     enum Tier {
         FIRST_CLASS,
         PRIVATE_JET
     }
-
-    mapping(uint256 => bool) private privateJet;
 
     /// @notice Struct for Mint data
     struct MintData {
@@ -39,14 +25,29 @@ contract LingoNFT is ERC721, EIP712, Ownable {
         Tier tier;
     }
 
-    string public firstClassURI = "ipfs://QmWsdztWmpXf8hiuGX8p8sXdn6K6J6zWuWWMcgaa6TaP2H";
-    string public privateJetURI = "ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx";
-
     /// @dev Tracks whether an address has minted for a specific tier
     struct MintStatus {
         bool firstClassMinted;
         bool privateJetMinted;
     }
+
+    uint256 private _nextTokenId;
+    uint256 public privateJetSupply;
+
+    /// @notice Start time for NFT sale
+    uint256 public saleStartTime;
+
+    /// @notice Maximum supply of First Class NFTs
+    uint256 public maxFirstClassSupply;
+
+    /// @notice Address authorized to sign minting transactions
+    address public mintSigner;
+
+    mapping(uint256 => bool) private privateJet;
+
+    string public firstClassURI = "ipfs://QmWsdztWmpXf8hiuGX8p8sXdn6K6J6zWuWWMcgaa6TaP2H";
+    string public privateJetURI = "ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx";
+
     mapping(address => MintStatus) private _hasMinted;
 
     /// @dev Ensures actions are only taken if the sale has started

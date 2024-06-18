@@ -1,14 +1,14 @@
 {
-	"folders": [
-		{
-			"path": "../../../Downloads/nft-contract-main"
-		},
-		{
-			"path": ".."
-		}
-	],
-	"settings": {
-		"slither.solcPath": "",
-		"slither.hiddenDetectors": []
-	}
+  "folders": [
+    {
+      "path": "../../../Downloads/nft-contract-main",
+    },
+    {
+      "path": "..",
+    },
+  ],
+  "settings": {
+    "slither.solcPath": "",
+    "slither.hiddenDetectors": [],
+  },
 }
