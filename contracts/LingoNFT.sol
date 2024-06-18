@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 
 /// @title LingoNFT: An NFT Contract for Lingo SocialFi Campaign
 /// @notice This contract allows for the minting and management of various NFT tiers.
 /// @dev Inherits ERC721 for NFT functionality, Ownable for access control, and ReentrancyGuard for security.
-contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
+contract LingoNFT is ERC721, EIP712, Ownable {
     using ECDSA for bytes32;
 
     uint256 private _nextTokenId;
@@ -31,7 +31,6 @@ contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
         PRIVATE_JET
     }
 
-    /// @dev Mapping to store Tier for each token ID
     mapping(uint256 => bool) private privateJet;
 
     /// @notice Struct for Mint data
@@ -44,7 +43,11 @@ contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
     string public privateJetURI = "ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx";
 
     /// @dev Tracks whether an address has minted for a specific tier
-    mapping(address => mapping(Tier => bool)) private _hasMinted;
+    struct MintStatus {
+        bool firstClassMinted;
+        bool privateJetMinted;
+    }
+    mapping(address => MintStatus) private _hasMinted;
 
     /// @dev Ensures actions are only taken if the sale has started
     modifier isActive() {
@@ -71,7 +74,7 @@ contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
         uint8 v
     ) external isActive {
         require(
-            !_hasMinted[msg.sender][Tier.FIRST_CLASS],
+            !_hasMinted[msg.sender].firstClassMinted,
             "Address already minted First"
         );
         require(
@@ -121,7 +124,11 @@ contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
     /// @param uri The new URI
     function setTierURI(Tier tier, string calldata uri) external onlyOwner {
         require(bytes(uri).length > 0, "URI cannot be empty");
-        tier == Tier.FIRST_CLASS ? firstClassURI = uri : privateJetURI = uri;
+        if(tier == Tier.FIRST_CLASS) {
+            firstClassURI = uri;
+        } else {
+            privateJetURI = uri;
+        }
     }
 
     /// @notice Sets the start time for the NFT sale
@@ -160,7 +167,11 @@ contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
         address account,
         Tier tier
     ) external view returns (bool) {
-        return _hasMinted[account][tier];
+        if(tier == Tier.FIRST_CLASS) {
+            return _hasMinted[account].firstClassMinted;
+        } else {
+            return _hasMinted[account].privateJetMinted;
+        }
     }
 
     /// @notice Retrieves the total number of NFTs minted
@@ -196,9 +207,10 @@ contract LingoNFT is ERC721URIStorage, EIP712, Ownable {
         if (tier == Tier.PRIVATE_JET) {
             privateJetSupply++;
             privateJet[tokenId] = true;
+            _hasMinted[to].privateJetMinted = true;
+        } else {
+            _hasMinted[to].firstClassMinted = true;
         }
-
-        _hasMinted[to][tier] = true;
 
         _safeMint(to, tokenId);
     }
