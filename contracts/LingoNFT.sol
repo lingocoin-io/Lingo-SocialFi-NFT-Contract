@@ -65,6 +65,9 @@ contract LingoNFT is ERC721, EIP712, Ownable {
         maxFirstClassSupply = _maxFirstClassSupply;
     }
 
+    /// @notice Function to receive Ether
+    receive() external payable {}
+
     /// @notice Allows the minting of First Class NFTs
     /// @dev Requires that the sale is active and the provided signature is valid
     /// @param r The r component of the signature
