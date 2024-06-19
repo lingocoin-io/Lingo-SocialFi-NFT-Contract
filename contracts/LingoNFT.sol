@@ -65,9 +65,6 @@ contract LingoNFT is ERC721, EIP712, Ownable {
         maxFirstClassSupply = _maxFirstClassSupply;
     }
 
-    /// @notice Function to receive Ether
-    receive() external payable {}
-
     /// @notice Allows the minting of First Class NFTs
     /// @dev Requires that the sale is active and the provided signature is valid
     /// @param r The r component of the signature
@@ -135,16 +132,6 @@ contract LingoNFT is ERC721, EIP712, Ownable {
     /// @param _startDate The start time as a UNIX timestamp
     function setSaleStartTime(uint256 _startDate) external onlyOwner {
         saleStartTime = _startDate;
-    }
-
-    /// @notice Withdraws contract balance to the owner's address
-    /// @dev Only callable by the contract owner
-    function withdraw() external onlyOwner {
-        uint256 balance = address(this).balance;
-        if (balance == 0) revert CannotBeZero();
-        // Transfer funds to the owner's address
-        (bool sent, ) = owner().call{value: balance}("");
-        if (!sent) revert NotSent();
     }
 
     /// @notice Airdrops NFTs of a specified tier to multiple addresses
