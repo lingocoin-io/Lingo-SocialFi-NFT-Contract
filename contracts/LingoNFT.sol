@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 error CannotBeZero();
 error InvalidSignature();
@@ -19,8 +19,6 @@ error Unauthorized();
 /// @notice This contract allows for the minting and management of various NFT tiers.
 /// @dev Inherits ERC721 for NFT functionality, Ownable for access control, and ReentrancyGuard for security.
 contract LingoNFT is ERC721, EIP712, Ownable {
-    using ECDSA for bytes32;
-
     /// @notice Enumeration for NFT tiers
     enum Tier {
         FIRST_CLASS,
@@ -53,13 +51,17 @@ contract LingoNFT is ERC721, EIP712, Ownable {
 
     mapping(uint256 => bool) private privateJet;
 
-    string public firstClassURI = "ipfs://QmWsdztWmpXf8hiuGX8p8sXdn6K6J6zWuWWMcgaa6TaP2H";
-    string public privateJetURI = "ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx";
+    string public firstClassURI =
+        "ipfs://QmWsdztWmpXf8hiuGX8p8sXdn6K6J6zWuWWMcgaa6TaP2H";
+    string public privateJetURI =
+        "ipfs://QmPNSZ2jgQtLnk46EaCvcm5WQ31PZDMeCtgtPfbBbtBMsx";
 
     mapping(address => MintStatus) private _hasMinted;
 
     /// @notice Initializes contract with URIs for each NFT tier
-    constructor(uint256 _maxFirstClassSupply) ERC721("Lingo NFT", "LING") EIP712("Lingo NFT", "1") Ownable(msg.sender) {
+    constructor(
+        uint256 _maxFirstClassSupply
+    ) ERC721("Lingo NFT", "LING") EIP712("Lingo NFT", "1") Ownable(msg.sender) {
         maxFirstClassSupply = _maxFirstClassSupply;
     }
 
@@ -68,16 +70,17 @@ contract LingoNFT is ERC721, EIP712, Ownable {
     /// @param r The r component of the signature
     /// @param s The s component of the signature
     /// @param v The recovery byte of the signature
-    function mintFirstClassNFT(
-        bytes32 r,
-        bytes32 s,
-        uint8 v
-    ) external {
-        if(_hasMinted[msg.sender].firstClassMinted) revert Unauthorized();
-        if (saleStartTime == 0 || block.timestamp < saleStartTime) revert NotStarted();
-        if((_nextTokenId - privateJetSupply) >= maxFirstClassSupply) revert MaxSupplyReached();
+    function mintFirstClassNFT(bytes32 r, bytes32 s, uint8 v) external {
+        if (_hasMinted[msg.sender].firstClassMinted) revert Unauthorized();
+        if (saleStartTime == 0 || block.timestamp < saleStartTime)
+            revert NotStarted();
+        if ((_nextTokenId - privateJetSupply) >= maxFirstClassSupply)
+            revert MaxSupplyReached();
 
-        MintData memory data = MintData({sender: msg.sender, tier: Tier.FIRST_CLASS});
+        MintData memory data = MintData({
+            sender: msg.sender,
+            tier: Tier.FIRST_CLASS
+        });
 
         bytes32 structHash = keccak256(
             abi.encode(
@@ -92,7 +95,8 @@ contract LingoNFT is ERC721, EIP712, Ownable {
             structHash
         );
 
-        if(ECDSA.recover(messageHash, v, r, s) != mintSigner) revert InvalidSignature();
+        if (ECDSA.recover(messageHash, v, r, s) != mintSigner)
+            revert InvalidSignature();
 
         _mint(msg.sender, Tier.FIRST_CLASS);
     }
@@ -100,14 +104,14 @@ contract LingoNFT is ERC721, EIP712, Ownable {
     /// @notice Sets the maximum supply for First Class NFTs
     /// @param _maxSupply New maximum supply
     function setMaxFirstClassSupply(uint256 _maxSupply) external onlyOwner {
-        if(_maxSupply == 0) revert CannotBeZero();
+        if (_maxSupply == 0) revert CannotBeZero();
         maxFirstClassSupply = _maxSupply;
     }
 
     /// @notice Assigns the signer
     /// @param _signer The address of signer
     function setMintSigner(address _signer) external onlyOwner {
-        if(_signer == address(0)) revert CannotBeZero();
+        if (_signer == address(0)) revert CannotBeZero();
         mintSigner = _signer;
     }
 
@@ -115,9 +119,9 @@ contract LingoNFT is ERC721, EIP712, Ownable {
     /// @param tier The NFT tier
     /// @param uri The new URI
     function setTierURI(Tier tier, string calldata uri) external onlyOwner {
-        if(bytes(uri).length == 0) revert CannotBeZero();
+        if (bytes(uri).length == 0) revert CannotBeZero();
 
-        if(tier == Tier.FIRST_CLASS) {
+        if (tier == Tier.FIRST_CLASS) {
             firstClassURI = uri;
         } else {
             privateJetURI = uri;
@@ -134,10 +138,10 @@ contract LingoNFT is ERC721, EIP712, Ownable {
     /// @dev Only callable by the contract owner
     function withdraw() external onlyOwner {
         uint256 balance = address(this).balance;
-        if(balance == 0) revert CannotBeZero();
+        if (balance == 0) revert CannotBeZero();
         // Transfer funds to the owner's address
         (bool sent, ) = owner().call{value: balance}("");
-        if(!sent) revert NotSent();
+        if (!sent) revert NotSent();
     }
 
     /// @notice Airdrops NFTs of a specified tier to multiple addresses
@@ -160,7 +164,7 @@ contract LingoNFT is ERC721, EIP712, Ownable {
         address account,
         Tier tier
     ) external view returns (bool) {
-        if(tier == Tier.FIRST_CLASS) {
+        if (tier == Tier.FIRST_CLASS) {
             return _hasMinted[account].firstClassMinted;
         } else {
             return _hasMinted[account].privateJetMinted;
